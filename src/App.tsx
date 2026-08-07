@@ -29,7 +29,9 @@ import {
   getRecentlyViewedTickets,
   addRecentlyViewedTicket,
   getWatchedTicketKeys,
-  toggleWatchTicketKey
+  toggleWatchTicketKey,
+  purgeStaleCachedIssues,
+  syncAndRefreshAllCachedIssues
 } from './services/jiraService';
 import { Header } from './components/Header';
 import { SearchPanel } from './components/SearchPanel';
@@ -79,6 +81,15 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [settings.theme]);
+
+  // Run Stale Data Cleanup on mount or settings change if enabled (>30 days)
+  useEffect(() => {
+    if (settings.enableStaleCleanup !== false) {
+      const fresh = purgeStaleCachedIssues(30);
+      setCachedIssues(fresh);
+      setCacheStats(getCacheStats(settings.maxCachedTickets));
+    }
+  }, [settings.enableStaleCleanup, settings.maxCachedTickets]);
 
   // Check for updates on pinned and watched tickets
   const checkForPinnedUpdates = useCallback(() => {
@@ -624,6 +635,12 @@ export default function App() {
       <IssueDetailModal
         issue={selectedIssue}
         onClose={() => setSelectedIssue(null)}
+        allIssues={searchResults.length > 0 ? searchResults : cachedIssues}
+        onSelectIssue={(issue) => {
+          setSelectedIssue(issue);
+          addRecentlyViewedTicket(issue);
+          setRecentlyViewed(getRecentlyViewedTickets());
+        }}
         onUpdateIssueStatus={handleUpdateIssueStatus}
         onUpdateIssuePriority={handleUpdateIssuePriority}
         onUpdateIssueAssignee={handleUpdateIssueAssignee}

@@ -70,6 +70,7 @@ export interface JiraIssue {
   comments: JiraComment[];
   url: string;
   cachedAt?: string;
+  lastViewedAt?: string;
   isCachedOffline?: boolean;
   storyPoints?: number;
   fixVersion?: string;
@@ -98,6 +99,7 @@ export interface ExtensionSettings {
   maxCachedTickets: number; // default 20
   autoCacheOnSearch: boolean;
   enableAutoRefresh?: boolean; // background refresh of cached tickets every 15m
+  enableStaleCleanup?: boolean; // auto purge cached tickets older than 30d
   groupCachedBy?: 'none' | 'status' | 'project' | 'priority'; // auto-grouping in CachedTicketsManager
   viewMode: 'popup' | 'full'; // 'popup' simulates ~400px extension popup window
   isSimulatedOffline: boolean;

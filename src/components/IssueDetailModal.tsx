@@ -33,12 +33,16 @@ import {
   Timer,
   NotebookPen,
   Save,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface IssueDetailModalProps {
   issue: JiraIssue | null;
   onClose: () => void;
+  allIssues?: JiraIssue[];
+  onSelectIssue?: (issue: JiraIssue) => void;
   onUpdateIssueStatus?: (key: string, newStatusName: string, category: StatusCategory) => void;
   onUpdateIssuePriority?: (key: string, newPriorityName: PriorityName) => void;
   onUpdateIssueAssignee?: (key: string, name: string, email: string) => void;
@@ -53,6 +57,8 @@ interface IssueDetailModalProps {
 export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   issue,
   onClose,
+  allIssues,
+  onSelectIssue,
   onUpdateIssueStatus,
   onUpdateIssuePriority,
   onUpdateIssueAssignee,
@@ -73,6 +79,19 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   // Scratchpad / Local Notes state for this ticket with debounced auto-save
   const [scratchpadNote, setScratchpadNote] = useState<string>('');
   const [scratchpadSaveStatus, setScratchpadSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Track last viewed timestamp for Stale Data Cleanup
+  useEffect(() => {
+    if (issue) {
+      issue.lastViewedAt = new Date().toISOString();
+    }
+  }, [issue?.key]);
+
+  // Calculate current index in allIssues array for arrow key navigation
+  const currentIndex = React.useMemo(() => {
+    if (!issue || !allIssues) return -1;
+    return allIssues.findIndex(i => i.key.toUpperCase() === issue.key.toUpperCase());
+  }, [issue?.key, allIssues]);
 
   // Load ticket scratchpad from localStorage whenever selected issue changes
   useEffect(() => {
@@ -133,14 +152,42 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
     onUpdateIssueAssignee(issue.key, formattedName, userEmail);
   };
 
-  // Keyboard Shortcuts in Detail Modal (Alt+1, Alt+2, Alt+3, Alt+P, Cmd+P)
+  const handleOpenInNewTab = () => {
+    if (!issue) return;
+    const fullUrl = issue.url || `${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`;
+    if (typeof window !== 'undefined' && (window as any).chrome?.tabs?.create) {
+      (window as any).chrome.tabs.create({ url: fullUrl });
+    } else {
+      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Keyboard Shortcuts in Detail Modal (Esc, Arrow Left/Right, Alt+1, Alt+2, Alt+3, Alt+P, Cmd+P)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in comment textarea
-      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      if (targetTag === 'textarea' || targetTag === 'input') return;
+      // Esc key closes modal immediately
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
 
-      if (e.altKey && e.key === '1') {
+      // Don't trigger shortcuts if user is typing in comment textarea or input field
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isEditable = (e.target as HTMLElement)?.isContentEditable;
+      if (targetTag === 'textarea' || targetTag === 'input' || isEditable) return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        if (allIssues && onSelectIssue && currentIndex > 0) {
+          e.preventDefault();
+          onSelectIssue(allIssues[currentIndex - 1]);
+        }
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (allIssues && onSelectIssue && currentIndex >= 0 && currentIndex < allIssues.length - 1) {
+          e.preventDefault();
+          onSelectIssue(allIssues[currentIndex + 1]);
+        }
+      } else if (e.altKey && e.key === '1') {
         e.preventDefault();
         handleStatusChange('To Do', 'to-do');
       } else if (e.altKey && e.key === '2') {
@@ -160,7 +207,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [issue]);
+  }, [issue, allIssues, currentIndex]);
 
   const handleTriggerPrint = () => {
     setIsPrintMode(true);
@@ -409,7 +456,45 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            {/* Arrow Key Navigation Controls */}
+            {allIssues && allIssues.length > 1 && (
+              <div className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded-lg border border-slate-700 text-[11px]">
+                <button
+                  type="button"
+                  disabled={currentIndex <= 0}
+                  onClick={() => currentIndex > 0 && onSelectIssue && onSelectIssue(allIssues[currentIndex - 1])}
+                  className="text-slate-300 hover:text-white disabled:opacity-30 p-0.5 rounded hover:bg-slate-700 transition-colors cursor-pointer"
+                  title="Previous Issue (← or ↑ Arrow Key)"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="font-mono text-[10px] text-slate-300 px-1 font-semibold">
+                  {currentIndex >= 0 ? currentIndex + 1 : 1}/{allIssues.length}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentIndex < 0 || currentIndex >= allIssues.length - 1}
+                  onClick={() => currentIndex >= 0 && currentIndex < allIssues.length - 1 && onSelectIssue && onSelectIssue(allIssues[currentIndex + 1])}
+                  className="text-slate-300 hover:text-white disabled:opacity-30 p-0.5 rounded hover:bg-slate-700 transition-colors cursor-pointer"
+                  title="Next Issue (→ or ↓ Arrow Key)"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Open in New Tab Button (uses chrome.tabs.create) */}
+            <button
+              type="button"
+              onClick={handleOpenInNewTab}
+              title="Open Jira Ticket in New Browser Tab (uses chrome.tabs.create)"
+              className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-all text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-blue-100" />
+              <span className="hidden sm:inline">Open Tab</span>
+            </button>
+
             {onToggleWatchTicket && (
               <button
                 onClick={() => onToggleWatchTicket(issue.key)}
@@ -454,25 +539,15 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             <button
               onClick={handleCopyLink}
               title="Copy direct URL of Jira ticket to clipboard"
-              className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-all text-xs font-bold flex items-center gap-1 shadow-2xs"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all text-xs font-medium flex items-center gap-1"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Link Copied!' : 'Copy Jira Link'}</span>
             </button>
-
-            <a
-              href={issue.url || `${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`}
-              target="_blank"
-              rel="noreferrer"
-              title="Open issue directly in Jira"
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors ml-1"
+              title="Close Drawer (Esc)"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors ml-1 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

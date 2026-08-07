@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ExtensionSettings } from '../types';
-import { loadSearchHistory, saveSearchHistory, getCachedIssues } from '../services/jiraService';
+import { loadSearchHistory, saveSearchHistory, getCachedIssues, purgeStaleCachedIssues, clearAllMockDataAndPrepareProduction } from '../services/jiraService';
 import { 
   Settings, 
   Trash2, 
@@ -51,6 +51,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  const [stalePurgedMsg, setStalePurgedMsg] = useState<string | null>(null);
+  const [mockCleanupMsg, setMockCleanupMsg] = useState<string | null>(null);
+
+  const handlePurgeStaleNow = () => {
+    const fresh = purgeStaleCachedIssues(30);
+    const countBefore = getCachedIssues().length;
+    onClearCache(); // refresh list
+    setStalePurgedMsg('Stale data cleanup complete! Retained recent tickets.');
+    setTimeout(() => setStalePurgedMsg(null), 3500);
+  };
+
+  const handleCleanupMockData = () => {
+    clearAllMockDataAndPrepareProduction();
+    onClearAllData();
+    setMockCleanupMsg('All seed demo & mock data cleared. Ready for live extension distribution!');
+    setTimeout(() => setMockCleanupMsg(null), 4000);
+  };
 
   const handleExportJSON = () => {
     const exportData = {
@@ -407,6 +425,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             />
           </div>
 
+          {/* Stale Data Cleanup Toggle */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <div>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Stale Data Cleanup (&gt;30 Days)</span>
+              <span className="text-[10px] text-slate-400 block">Automatically purge cached tickets that have not been viewed or updated in more than 30 days</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formData.enableStaleCleanup ?? true}
+              onChange={(e) => handleChange('enableStaleCleanup', e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
+            />
+          </div>
+
           {/* Group Cached Tickets Setting */}
           <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-700/60">
             <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
@@ -538,6 +570,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="space-y-2 text-xs">
+          {/* Option 0: Purge Stale Tickets (>30d) */}
+          <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-lg border border-rose-100 dark:border-slate-700">
+            <div>
+              <span className="font-semibold text-slate-800 dark:text-slate-200 block">Purge Stale Tickets (&gt;30 Days)</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Removes cached tickets not viewed or updated in 30+ days</span>
+            </div>
+            <button
+              type="button"
+              onClick={handlePurgeStaleNow}
+              className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 rounded text-[11px] font-semibold transition-colors border border-amber-200 dark:border-amber-700/60 cursor-pointer"
+            >
+              Purge Stale (&gt;30d)
+            </button>
+          </div>
+          {stalePurgedMsg && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold px-2">{stalePurgedMsg}</p>
+          )}
+
+          {/* Option 0.5: Cleanup All Seed Mock Data for Extension Release */}
+          <div className="flex items-center justify-between p-2 bg-blue-50/70 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div>
+              <span className="font-bold text-blue-900 dark:text-blue-200 block">Cleanup Mock Data (Extension Release)</span>
+              <span className="text-[10px] text-blue-700 dark:text-blue-300 block">Purges all initial seed demo tickets & history for a clean release</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCleanupMockData}
+              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-bold transition-colors shadow-2xs cursor-pointer"
+            >
+              Cleanup Mock Data
+            </button>
+          </div>
+          {mockCleanupMsg && (
+            <p className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold px-2">{mockCleanupMsg}</p>
+          )}
+
           {/* Option 1: Clear Cached Tickets */}
           <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-rose-100">
             <div>

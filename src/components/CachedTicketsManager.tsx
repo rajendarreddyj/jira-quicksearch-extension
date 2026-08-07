@@ -372,11 +372,22 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
         </div>
 
         {cachedIssues.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Refresh All Button (Background Fetch from Jira API) */}
+            <button
+              onClick={handleSyncClick}
+              disabled={isSyncing}
+              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-[11px] font-bold rounded-md transition-colors shadow-xs flex items-center gap-1 cursor-pointer"
+              title="Trigger background fetch to update details of all currently cached tickets from the Jira API"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Refreshing All...' : 'Refresh All'}</span>
+            </button>
+
             {/* Export to CSV Button */}
             <button
               onClick={handleExportCSV}
-              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md transition-colors shadow-xs flex items-center gap-1"
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md transition-colors shadow-xs flex items-center gap-1 cursor-pointer"
               title="Export offline cached Jira tickets to a CSV file"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -390,13 +401,13 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
                     onClearAllCache();
                     setConfirmClear(false);
                   }}
-                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded transition-colors shadow-xs"
+                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded transition-colors shadow-xs cursor-pointer"
                 >
                   Clear All
                 </button>
                 <button
                   onClick={() => setConfirmClear(false)}
-                  className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-medium rounded hover:bg-slate-300"
+                  className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-medium rounded hover:bg-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -404,11 +415,11 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
             ) : (
               <button
                 onClick={() => setConfirmClear(true)}
-                className="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 rounded transition-colors"
+                className="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                 title="Clear all cached tickets"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Purge</span>
+                <span className="hidden sm:inline">Purge All</span>
               </button>
             )}
           </div>

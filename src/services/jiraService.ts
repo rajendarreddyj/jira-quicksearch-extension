@@ -289,14 +289,86 @@ export function removeCachedIssue(key: string): JiraIssue[] {
   return updated;
 }
 
+export function purgeStaleCachedIssues(maxDays: number = 30): JiraIssue[] {
+  const cached = getCachedIssues();
+  const now = Date.now();
+  const maxAgeMs = maxDays * 24 * 60 * 60 * 1000;
+
+  const fresh = cached.filter(issue => {
+    const checkDate = issue.lastViewedAt || issue.cachedAt || issue.updated;
+    if (!checkDate) return true;
+    const ageMs = now - new Date(checkDate).getTime();
+    return ageMs < maxAgeMs;
+  });
+
+  localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify(fresh));
+  return fresh;
+}
+
+export async function syncAndRefreshAllCachedIssues(settings: ExtensionSettings): Promise<JiraIssue[]> {
+  const cached = getCachedIssues();
+  if (cached.length === 0) return [];
+
+  // If online with credentials, attempt background refresh via API proxy
+  if (!settings.isSimulatedOffline && settings.jiraUrl && settings.apiToken && settings.userEmail) {
+    try {
+      const keysToRefresh = cached.map(i => i.key).join(', ');
+      const response = await fetch('/api/jira/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jiraUrl: settings.jiraUrl,
+          email: settings.userEmail,
+          apiToken: settings.apiToken,
+          projectKey: settings.projectKey,
+          query: `issueKey in (${keysToRefresh})`,
+          maxResults: cached.length,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const liveIssues: JiraIssue[] = data.issues || [];
+        if (liveIssues.length > 0) {
+          const updatedCache = cacheMultipleIssues(liveIssues, settings.maxCachedTickets);
+          return updatedCache;
+        }
+      }
+    } catch (e) {
+      console.warn('Background sync failed, using touch refresh fallback:', e);
+    }
+  }
+
+  // Fallback: refresh timestamps on cached items
+  const now = new Date().toISOString();
+  const refreshed = cached.map(issue => ({
+    ...issue,
+    cachedAt: now,
+    updated: now,
+  }));
+  localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify(refreshed));
+  return refreshed;
+}
+
 export function clearCachedIssues(): void {
   localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify([]));
+}
+
+export function clearAllMockDataAndPrepareProduction(): void {
+  localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify([]));
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([]));
+  localStorage.setItem(PINNED_TICKETS_KEY, JSON.stringify([]));
+  localStorage.setItem(WATCHED_TICKETS_KEY, JSON.stringify([]));
+  localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify([]));
 }
 
 export function clearAllLocalData(): void {
   localStorage.removeItem(CACHED_ISSUES_KEY);
   localStorage.removeItem(HISTORY_KEY);
   localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(PINNED_TICKETS_KEY);
+  localStorage.removeItem(WATCHED_TICKETS_KEY);
+  localStorage.removeItem(RECENTLY_VIEWED_KEY);
 }
 
 export function getCacheStats(maxLimit: number): CacheStats {
