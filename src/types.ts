@@ -104,7 +104,6 @@ export interface ExtensionSettings {
   viewMode: 'popup' | 'full'; // 'popup' simulates ~400px extension popup window
   isSimulatedOffline: boolean;
   theme: 'light' | 'dark' | 'system';
-  showDevToolsInHeader?: boolean; // toggle visibility of CI/CD & Arch and Export Ext header buttons
   defaultSort: 'updated_desc' | 'created_desc' | 'priority_desc' | 'key_asc';
 }
 

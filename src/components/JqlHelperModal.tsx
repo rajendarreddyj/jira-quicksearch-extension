@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Code, Copy, Check, Zap, HelpCircle, ArrowRight, BookOpen, Search } from 'lucide-react';
+import { X, Copy, Check, ArrowRight, BookOpen } from 'lucide-react';
 
 interface JqlHelperModalProps {
   onClose: () => void;

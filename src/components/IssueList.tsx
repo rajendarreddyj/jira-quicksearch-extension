@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { JiraIssue } from '../types';
-import { 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Database, 
-  ExternalLink, 
-  User, 
+import {
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Database,
+  User,
   MessageSquare,
-  Tag,
   ChevronRight,
-  Sparkles,
   Pin,
   ArrowUp,
   ArrowDown,
@@ -23,9 +20,7 @@ import {
   Trash2,
   ListFilter,
   Target,
-  ArrowUpDown,
-  Eye,
-  EyeOff
+  ArrowUpDown
 } from 'lucide-react';
 
 interface IssueListProps {
@@ -211,7 +206,7 @@ export const IssueList: React.FC<IssueListProps> = ({
         <div className="space-y-1">
           <p className="text-sm font-semibold text-slate-700">No Jira Tickets Found</p>
           <p className="text-xs text-slate-500 max-w-xs mx-auto">
-            {searchQuery 
+            {searchQuery
               ? `No issues matched "${searchQuery}". Try a different ticket key or broader search term.`
               : 'Try searching by Jira ticket key (e.g. PROJ-101), summary text, or JQL query.'}
           </p>
@@ -726,9 +721,9 @@ export const IssueList: React.FC<IssueListProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-50 dark:border-slate-800/80">
                     <div className="flex items-center gap-1.5 text-[11px]">
                       {issue.assignee.avatar ? (
-                        <img 
-                          src={issue.assignee.avatar} 
-                          alt={issue.assignee.name} 
+                        <img
+                          src={issue.assignee.avatar}
+                          alt={issue.assignee.name}
                           className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-700"
                         />
                       ) : (

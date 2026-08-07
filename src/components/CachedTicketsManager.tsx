@@ -5,24 +5,15 @@ import {
   Pie, 
   Cell, 
   Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis
+  ResponsiveContainer
 } from 'recharts';
 import { 
   Database, 
   Trash2, 
   RefreshCw, 
-  ExternalLink, 
   HardDrive, 
   CheckCircle2, 
   ChevronRight, 
-  AlertTriangle,
-  Zap,
-  Info,
-  Download,
   FileSpreadsheet,
   PieChart as PieChartIcon
 } from 'lucide-react';

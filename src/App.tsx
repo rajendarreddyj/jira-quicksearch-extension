@@ -1,37 +1,35 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  JiraIssue, 
-  SearchHistoryItem, 
-  ExtensionSettings, 
-  ActiveTab, 
-  CacheStats, 
+import { useState, useEffect, useCallback } from 'react';
+import {
+  JiraIssue,
+  SearchHistoryItem,
+  ExtensionSettings,
+  ActiveTab,
+  CacheStats,
   StatusCategory,
   PriorityName
 } from './types';
-import { 
-  loadSettings, 
-  saveSettings, 
-  loadSearchHistory, 
-  addSearchQueryToHistory, 
-  togglePinHistory, 
-  deleteHistoryItem, 
-  clearSearchHistory, 
-  getCachedIssues, 
-  cacheIssue, 
+import {
+  loadSettings,
+  saveSettings,
+  loadSearchHistory,
+  addSearchQueryToHistory,
+  togglePinHistory,
+  deleteHistoryItem,
+  clearSearchHistory,
+  getCachedIssues,
+  cacheIssue,
   cacheMultipleIssues,
-  removeCachedIssue, 
-  clearCachedIssues, 
-  clearAllLocalData, 
-  getCacheStats, 
+  removeCachedIssue,
+  clearCachedIssues,
+  clearAllLocalData,
+  getCacheStats,
   executeJiraSearch,
   togglePinTicketKey,
-  getPinnedTicketKeys,
   getRecentlyViewedTickets,
   addRecentlyViewedTicket,
   getWatchedTicketKeys,
   toggleWatchTicketKey,
-  purgeStaleCachedIssues,
-  syncAndRefreshAllCachedIssues
+  purgeStaleCachedIssues
 } from './services/jiraService';
 import { Header } from './components/Header';
 import { SearchPanel } from './components/SearchPanel';
@@ -40,8 +38,6 @@ import { HistorySection } from './components/HistorySection';
 import { CachedTicketsManager } from './components/CachedTicketsManager';
 import { SettingsModal } from './components/SettingsModal';
 import { IssueDetailModal } from './components/IssueDetailModal';
-import { ExtensionManifestModal } from './components/ExtensionManifestModal';
-import { CiCdArchitectureModal } from './components/CiCdArchitectureModal';
 import { ActivityDashboard } from './components/ActivityDashboard';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ReportIssueModal } from './components/ReportIssueModal';
@@ -49,6 +45,10 @@ import { NotificationsModal, PinnedNotification } from './components/Notificatio
 
 export default function App() {
   const [settings, setSettings] = useState<ExtensionSettings>(loadSettings);
+  const [prefersSystemDark, setPrefersSystemDark] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [history, setHistory] = useState<SearchHistoryItem[]>(loadSearchHistory);
   const [cachedIssues, setCachedIssues] = useState<JiraIssue[]>(getCachedIssues);
   const [cacheStats, setCacheStats] = useState<CacheStats>(() => getCacheStats(settings.maxCachedTickets));
@@ -63,8 +63,6 @@ export default function App() {
   const [isOfflineResult, setIsOfflineResult] = useState(false);
 
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
-  const [showManifestModal, setShowManifestModal] = useState(false);
-  const [showCiCdModal, setShowCiCdModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -73,14 +71,30 @@ export default function App() {
   const [notifications, setNotifications] = useState<PinnedNotification[]>([]);
   const [isCheckingPinned, setIsCheckingPinned] = useState(false);
 
-  // Sync Dark Mode theme class to document element
   useEffect(() => {
-    if (settings.theme === 'dark') {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (event: MediaQueryListEvent) => setPrefersSystemDark(event.matches);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', onChange);
+      return () => mediaQuery.removeEventListener('change', onChange);
+    }
+
+    mediaQuery.addListener(onChange);
+    return () => mediaQuery.removeListener(onChange);
+  }, []);
+
+  const isDarkTheme = settings.theme === 'dark' || (settings.theme === 'system' && prefersSystemDark);
+
+  // Sync resolved dark mode class to document element
+  useEffect(() => {
+    if (isDarkTheme) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [settings.theme]);
+  }, [isDarkTheme]);
 
   // Run Stale Data Cleanup on mount or settings change if enabled (>30 days)
   useEffect(() => {
@@ -97,7 +111,7 @@ export default function App() {
     setTimeout(() => {
       const allKnown = getCachedIssues();
       const pinnedOrWatched = allKnown.filter(i => i.isPinned || watchedTicketKeys.includes(i.key.toUpperCase()));
-      
+
       if (pinnedOrWatched.length > 0) {
         const sample = pinnedOrWatched[Math.floor(Math.random() * pinnedOrWatched.length)];
         const isWatchedAlert = watchedTicketKeys.includes(sample.key.toUpperCase());
@@ -105,7 +119,7 @@ export default function App() {
           id: 'notif_' + Date.now(),
           ticketKey: sample.key,
           summary: sample.summary,
-          message: isWatchedAlert 
+          message: isWatchedAlert
             ? `Watched ticket activity: Status updated or new comment added`
             : `Pinned ticket update: Status updated or comment added`,
           timestamp: new Date().toISOString(),
@@ -206,7 +220,7 @@ export default function App() {
             (searchInput as HTMLInputElement).select();
           }
         }, 50);
-      } 
+      }
       // Ctrl+Shift+L / Cmd+Shift+L -> Jump directly to 'Cached Tickets' tab
       else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toUpperCase() === 'L') {
         e.preventDefault();
@@ -499,13 +513,13 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans antialiased selection:bg-blue-200 ${
-      settings.theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'
+      isDarkTheme ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'
     }`}>
-      
+
       {/* Chrome Extension Container Shell */}
-      <div 
+      <div
         className={`mx-auto min-h-screen shadow-2xl transition-all duration-300 flex flex-col border-x ${
-          settings.theme === 'dark'
+          isDarkTheme
             ? 'bg-slate-900 border-slate-800 shadow-black/80'
             : 'bg-white border-slate-200/80 shadow-slate-300/50'
         } ${
@@ -518,8 +532,6 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onUpdateSettings={handleSaveSettings}
-          onOpenManifestModal={() => setShowManifestModal(true)}
-          onOpenCiCdModal={() => setShowCiCdModal(true)}
           onOpenShortcutsModal={() => setShowShortcutsModal(true)}
           onOpenNotifications={() => setShowNotificationsModal(true)}
           notificationsCount={notifications.filter(n => !n.read).length}
@@ -528,7 +540,7 @@ export default function App() {
         />
 
         {/* Dynamic Tab Body */}
-        <main className={`flex-1 flex flex-col ${settings.theme === 'dark' ? 'bg-slate-900/90' : 'bg-slate-50/50'}`}>
+        <main className={`flex-1 flex flex-col ${isDarkTheme ? 'bg-slate-900/90' : 'bg-slate-50/50'}`}>
           {/* SEARCH TAB */}
           {activeTab === 'search' && (
             <div className="flex-1 flex flex-col">
@@ -627,6 +639,8 @@ export default function App() {
             <span>Cache Limit: {settings.maxCachedTickets} issues</span>
             <span>•</span>
             <span className="font-mono">{settings.projectKey}</span>
+            <span>•</span>
+            <span className="font-mono">v{__APP_VERSION__}</span>
           </div>
         </footer>
       </div>
@@ -651,21 +665,6 @@ export default function App() {
         jiraUrl={settings.jiraUrl}
         currentUserEmail={settings.userEmail}
       />
-
-      {/* Chrome Extension Manifest Exporter Modal */}
-      {showManifestModal && (
-        <ExtensionManifestModal
-          onClose={() => setShowManifestModal(false)}
-          jiraUrl={settings.jiraUrl}
-        />
-      )}
-
-      {/* GitHub Repository & Chrome Web Store CI/CD Architecture Modal */}
-      {showCiCdModal && (
-        <CiCdArchitectureModal
-          onClose={() => setShowCiCdModal(false)}
-        />
-      )}
 
       {/* Keyboard Shortcuts Cheat Sheet Modal */}
       {showShortcutsModal && (

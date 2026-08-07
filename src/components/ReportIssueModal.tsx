@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Copy, Check, Bug, Send, ShieldAlert, Terminal } from 'lucide-react';
+import { X, Copy, Check, Bug, Send, Terminal } from 'lucide-react';
 import { ExtensionSettings } from '../types';
 
 interface ReportIssueModalProps {

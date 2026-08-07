@@ -29,48 +29,41 @@
 ## 📐 System Architecture Diagram
 
 ```
-+-----------------------------------------------------------------------------------+
-|                                 USER INTERFACE                                    |
-| +-------------------------------------------------------------------------------+ |
-| |                            React 18 + Tailwind CSS                            | |
-| |                                                                               | |
-| |   +-------------------+  +--------------------+  +-------------------------+  | |
-| |   |   Header & Nav    |  | Search & JQL Panel |  |  Issue List & Bulk Bar  |  | |
-| |   +-------------------+  +--------------------+  +-------------------------+  | |
-| |   | - Dark Mode Toggle|  | - JQL Autocomplete |  | - Quick Filter Chips    |  | |
-| |   | - Auto-Refresh    |  | - Copy JQL String  |  | - Interactive Labels    |  | |
-| |   +-------------------+  +--------------------+  +-------------------------+  | |
-| |                                                                               | |
-| |   +-----------------------------------------------------------------------+   | |
-| |   |                         Issue Detail Drawer                           |   | |
-| |   | - Time Tracking Progress Bar   | - Print to PDF Mode                  |   | |
-| |   | - Interactive Labels Filtering | - Markdown Comments & Subtasks       |   | |
-| |   +-----------------------------------------------------------------------+   | |
-| +-------------------------------------------------------------------------------+ |
-+------------------------------------------|----------------------------------------+
-                                           |
-                                           v
-+-----------------------------------------------------------------------------------+
-|                            STATE & SERVICE ENGINE                                 |
-| +-------------------------------------------------------------------------------+ |
-| |                             jiraService.ts Engine                             | |
-| |                                                                               | |
-| |  - Local Cache & Grouping Engine        - Watcher & Pin Notification Engine    | |
-| |  - Auto-Refresh Interval Engine         - Settings JSON Import/Export Engine  | |
-| +-------------------------------------------------------------------------------+ |
-+------------------------------------------|----------------------------------------+
-                                           |
-                    +----------------------+----------------------+
-                    |                                             |
-                    v                                             v
-+---------------------------------------+     +---------------------------------------+
-|          LOCAL PERSISTENCE            |     |             JIRA REST API             |
-|                                       |     |                                       |
-| - localStorage (`jira_ext_cache`)     |     | - GET `/rest/api/3/search`            |
-| - localStorage (`jira_ext_history`)   |     | - GET `/rest/api/3/issue/{key}`       |
-| - localStorage (`jira_ext_watched`)   |     | - POST `/rest/api/3/issue/{key}/...`  |
-| - localStorage (`jira_ext_settings`)  |     | (Configured via API Token / Domain)   |
-+---------------------------------------+     +---------------------------------------+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│               CHROME EXTENSION (MANIFEST V3) ARCHITECTURE                   │
+│                           & CI/CD PIPELINE                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+[1] USER INTERFACE LAYER (Chrome Popup / Side Panel)
+┌ React 18 + Vite + Tailwind CSS
+├ Global Keyboard Navigation Engine (⌘K, ↑/↓, Enter)
+├ Recharts Analytics & Priority Badging Components
+└ Popup screens: SearchPanel, IssueList, IssueDetailModal, SettingsModal
+
+│ ▼ IPC / direct service calls
+
+[2] LOCAL STORAGE & CACHE ENGINE
+┌ Chrome Extension Storage Sync API (chrome.storage.local)
+├ Ticket Caching Engine (configurable limit, e.g. 50 issues)
+├ Cache sources: history, watched issues, settings, saved searches
+└ Offline Fallback Provider (serves cached results seamlessly)
+
+│ ▼ REST API proxy
+
+[3] EXTERNAL JIRA REST API INTEGRATION
+┌ Jira Cloud REST API v3 / JQL endpoint
+├ Authentication: Basic Auth Token / API Token
+├ Background worker alarms (chrome.alarms, sync every 30m)
+└ Issue operations: search, fetch details, watch, transition, comments
+
+│ ▼ CI/CD automated deployment
+
+[4] GITHUB ACTIONS RELEASE PIPELINE
+┌ Push/Tag trigger (git tag v1.0.0)
+├ Automated lint + Vite production bundle
+├ ZIP extension artifact packaging
+├ GitHub Release creation with release notes
+└ Direct upload and publish to Google Chrome Web Store API
 ```
 
 ---
@@ -92,10 +85,12 @@ The repository includes pre-configured GitHub Actions workflows located in `.git
 ## 🛠️ Development & Building
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or bun
 
 ### Local Commands
+
 ```bash
 # Install dependencies
 npm install
@@ -114,14 +109,36 @@ npm run build
 
 ## 🚀 How to Publish as a Chrome Extension
 
-### 1. Build the Extension Bundle
+### 0. Automatic Versioning & Release Creation
+
+When you push a git tag formatted like `v1.0.0`, GitHub Actions automatically triggers a production release build.
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+### 1. Chrome Web Store API Secret Keys Setup
+
+In your GitHub repository settings under **Secrets and variables → Actions**, add the following secrets:
+
+- `CHROME_EXTENSION_ID`: Your extension ID from Chrome Developer Dashboard
+- `CHROME_CLIENT_ID`: Google Cloud OAuth2 Client ID
+- `CHROME_CLIENT_SECRET`: Google Cloud OAuth2 Client Secret
+- `CHROME_REFRESH_TOKEN`: OAuth2 Refresh Token for Chrome Web Store API
+
+### 2. Build the Extension Bundle
+
 Run the build script to compile static HTML, CSS, and JS assets into the `dist` directory:
+
 ```bash
 npm run build
 ```
 
-### 2. Verify `manifest.json` Setup
+### 3. Verify `manifest.json` Setup
+
 Ensure the root `dist/manifest.json` file is present (or copy from `assets/manifest.json`). The extension uses Manifest V3:
+
 ```json
 {
   "manifest_version": 3,
@@ -141,19 +158,32 @@ Ensure the root `dist/manifest.json` file is present (or copy from `assets/manif
 }
 ```
 
-### 3. Load & Test Unpacked Extension locally
+### 4. Manual Local Build & Testing
+
+To test the extension locally in Chrome:
+
+1. Run `npm run build` locally.
+2. Open Chrome and navigate to `chrome://extensions`.
+3. Enable **Developer Mode** in the top right toggle.
+4. Click **Load unpacked** and select the generated `dist/` directory.
+
+### 5. Load & Test Unpacked Extension locally
+
 1. Open Google Chrome and navigate to `chrome://extensions/`.
 2. Toggle **Developer mode** in the top right corner.
 3. Click **Load unpacked**.
 4. Select the build output directory (`dist`).
 5. Open the Extension Popup from your Chrome toolbar and test Jira connection in Settings.
 
-### 4. Publish to the Chrome Web Store
+### 6. Publish to the Chrome Web Store
+
 1. **Create Developer Account**: Sign in to the [Chrome Web Store Developer Console](https://chrome.google.com/webstore/devconsole/).
 2. **Zip Distribution Output**: Compress the contents of the `dist` folder into a ZIP file:
+
    ```bash
    cd dist && zip -r ../jira-quicksearch-v1.0.0.zip .
    ```
+
 3. **Upload Package**: Click **New Item** in the Chrome Web Store Console and upload `jira-quicksearch-v1.0.0.zip`.
 4. **Store Listing Details**:
    - Title: Jira QuickSearch & Offline Cache
@@ -165,4 +195,5 @@ Ensure the root `dist/manifest.json` file is present (or copy from `assets/manif
 ---
 
 ## 📄 License
+
 MIT License. Built with React 18, Vite, Tailwind CSS, and Lucide Icons.

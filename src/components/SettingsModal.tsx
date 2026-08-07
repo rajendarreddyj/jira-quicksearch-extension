@@ -1,18 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { ExtensionSettings } from '../types';
 import { loadSearchHistory, saveSearchHistory, getCachedIssues, purgeStaleCachedIssues, clearAllMockDataAndPrepareProduction } from '../services/jiraService';
-import { 
-  Settings, 
-  Trash2, 
-  Check, 
-  AlertTriangle, 
-  ShieldCheck, 
-  Key, 
-  Globe, 
-  FolderKanban, 
-  HardDrive, 
-  RefreshCw, 
-  HelpCircle,
+import {
+  Settings,
+  Trash2,
+  Check,
+  AlertTriangle,
+  ShieldCheck,
+  Globe,
+  HardDrive,
   Eye,
   EyeOff,
   Download,
@@ -56,8 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [mockCleanupMsg, setMockCleanupMsg] = useState<string | null>(null);
 
   const handlePurgeStaleNow = () => {
-    const fresh = purgeStaleCachedIssues(30);
-    const countBefore = getCachedIssues().length;
+    purgeStaleCachedIssues(30);
     onClearCache(); // refresh list
     setStalePurgedMsg('Stale data cleanup complete! Retained recent tickets.');
     setTimeout(() => setStalePurgedMsg(null), 3500);
@@ -141,6 +136,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleThemeChange = (theme: ExtensionSettings['theme']) => {
+    setFormData((prev) => {
+      const updated = { ...prev, theme };
+      onSaveSettings(updated);
+      return updated;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveSettings(formData);
@@ -208,7 +211,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       {/* Main Settings Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        
+
         {/* Jira Connection Config Box */}
         <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
           <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
@@ -339,7 +342,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
-                onClick={() => handleChange('theme', 'light')}
+                onClick={() => handleThemeChange('light')}
                 className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                   formData.theme === 'light'
                     ? 'bg-white text-blue-700 shadow-xs'
@@ -352,7 +355,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleChange('theme', 'dark')}
+                onClick={() => handleThemeChange('dark')}
                 className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                   formData.theme === 'dark'
                     ? 'bg-slate-900 text-amber-300 shadow-xs'
@@ -421,20 +424,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               type="checkbox"
               checked={formData.enableAutoRefresh ?? true}
               onChange={(e) => handleChange('enableAutoRefresh', e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
-            />
-          </div>
-
-          {/* Show Release & Dev Tools in Header Toggle */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
-            <div>
-              <span className="text-xs font-bold text-blue-900 dark:text-blue-200 block">Show Developer / Release Tools in Header</span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Toggle visibility of &quot;CI/CD &amp; Arch&quot; and &quot;Export Ext&quot; buttons in top bar for clean user releases</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={formData.showDevToolsInHeader ?? true}
-              onChange={(e) => handleChange('showDevToolsInHeader', e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
             />
           </div>

@@ -13,13 +13,13 @@ export function getWatchedTicketKeys(): string[] {
   try {
     const raw = localStorage.getItem(WATCHED_TICKETS_KEY);
     if (!raw) {
-      const initial = ['PROJ-101'];
+      const initial: string[] = [];
       localStorage.setItem(WATCHED_TICKETS_KEY, JSON.stringify(initial));
       return initial;
     }
     return JSON.parse(raw);
   } catch (e) {
-    return ['PROJ-101'];
+    return [];
   }
 }
 
@@ -68,13 +68,13 @@ export function getPinnedTicketKeys(): string[] {
   try {
     const raw = localStorage.getItem(PINNED_TICKETS_KEY);
     if (!raw) {
-      const initial = ['PROJ-101', 'PROJ-102'];
+      const initial: string[] = [];
       localStorage.setItem(PINNED_TICKETS_KEY, JSON.stringify(initial));
       return initial;
     }
     return JSON.parse(raw);
   } catch (e) {
-    return ['PROJ-101', 'PROJ-102'];
+    return [];
   }
 }
 
@@ -195,12 +195,7 @@ export function getCachedIssues(): JiraIssue[] {
   try {
     const raw = localStorage.getItem(CACHED_ISSUES_KEY);
     if (!raw) {
-      // Initialize with sample cached tickets if empty
-      const initialCache = MOCK_ISSUES.slice(0, 3).map(issue => ({
-        ...issue,
-        cachedAt: new Date().toISOString(),
-        isCachedOffline: true,
-      }));
+      const initialCache: JiraIssue[] = [];
       localStorage.setItem(CACHED_ISSUES_KEY, JSON.stringify(initialCache));
       return initialCache;
     }
@@ -477,7 +472,7 @@ function searchLocalCacheAndMocks(
 
   if (cleanQuery) {
     const userEmail = (settings.userEmail || '').toLowerCase();
-    const userHandle = userEmail.split('@')[0] || 'sarah.j';
+    const userHandle = userEmail.split('@')[0] || '';
 
     if (
       cleanQuery.includes('pinned = true') ||
@@ -495,8 +490,8 @@ function searchLocalCacheAndMocks(
       cleanQuery === 'assignee = me'
     ) {
       filtered = filtered.filter(i => {
-        const emailMatch = i.assignee.email?.toLowerCase() === userEmail;
-        const nameMatch = i.assignee.name.toLowerCase().includes('sarah') || i.assignee.name.toLowerCase().includes(userHandle);
+        const emailMatch = userEmail.length > 0 && i.assignee.email?.toLowerCase() === userEmail;
+        const nameMatch = userHandle.length > 0 && i.assignee.name.toLowerCase().includes(userHandle);
         return emailMatch || nameMatch;
       });
     } else if (cleanQuery.startsWith('status =')) {

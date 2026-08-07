@@ -1,6 +1,5 @@
 import React from 'react';
-import { X, Bell, Pin, CheckCircle2, RefreshCw, ArrowRight, Trash2, ShieldCheck, Sparkles } from 'lucide-react';
-import { JiraIssue } from '../types';
+import { X, Bell, Pin, RefreshCw, ArrowRight, Trash2, ShieldCheck } from 'lucide-react';
 
 export interface PinnedNotification {
   id: string;

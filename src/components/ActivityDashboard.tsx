@@ -1,18 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { JiraIssue } from '../types';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  Legend, 
-  CartesianGrid 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  CartesianGrid
 } from 'recharts';
-import { Activity, Calendar, TrendingUp, User, Tag, CheckCircle2, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
+import { Activity, Calendar, TrendingUp, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
 
 interface ActivityDashboardProps {
   issues: JiraIssue[];
@@ -56,18 +54,12 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
         }
       });
 
-      // Provide simulated fallback data so the 30-day heatmap & chart look rich and active
-      // if real issues dates are sparse
-      const simSeed = (i * 7 + 13) % 5;
-      const finalCreated = createdCount || (i % 3 === 0 ? simSeed % 3 : 0);
-      const finalUpdated = updatedCount || (i % 2 === 0 ? (simSeed + 1) % 4 : 1);
-
       days.push({
         dateStr,
         label,
-        created: finalCreated,
-        updated: finalUpdated,
-        total: finalCreated + finalUpdated,
+        created: createdCount,
+        updated: updatedCount,
+        total: createdCount + updatedCount,
         issues: dayIssues,
       });
     }
@@ -75,17 +67,14 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
     return days;
   }, [issues, timeRangeDays]);
 
-  // Heatmap intensity calculation
-  const maxDailyTotal = useMemo(() => {
-    return Math.max(...dailyActivityData.map(d => d.total), 1);
-  }, [dailyActivityData]);
-
   const totalActivity = useMemo(() => {
     return dailyActivityData.reduce((acc, curr) => acc + curr.total, 0);
   }, [dailyActivityData]);
 
   const peakDay = useMemo(() => {
-    return [...dailyActivityData].sort((a, b) => b.total - a.total)[0];
+    if (dailyActivityData.length === 0) return undefined;
+    const top = [...dailyActivityData].sort((a, b) => b.total - a.total)[0];
+    return top.total > 0 ? top : undefined;
   }, [dailyActivityData]);
 
   // CSV Exporter for displayed issues
@@ -121,10 +110,10 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
 
   // Color mapper for 30-day activity heatmap cells
   const getHeatmapBg = (count: number) => {
-    if (count === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200';
-    if (count <= 2) return 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 border-emerald-300';
-    if (count <= 4) return 'bg-emerald-300 dark:bg-emerald-800 text-emerald-900 border-emerald-400';
-    return 'bg-emerald-600 dark:bg-emerald-600 text-white font-bold border-emerald-700 shadow-xs';
+    if (count === 0) return 'bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700';
+    if (count <= 2) return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800';
+    if (count <= 4) return 'bg-emerald-300 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 border-emerald-400 dark:border-emerald-700';
+    return 'bg-emerald-600 dark:bg-emerald-600 text-white font-bold border-emerald-700 dark:border-emerald-500 shadow-xs';
   };
 
   return (
@@ -218,10 +207,10 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
           </div>
           <div className="flex items-center gap-1 text-[10px] text-slate-500">
             <span>Less</span>
-            <span className="w-2.5 h-2.5 rounded bg-slate-100 border border-slate-200" />
-            <span className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300" />
-            <span className="w-2.5 h-2.5 rounded bg-emerald-300 border border-emerald-400" />
-            <span className="w-2.5 h-2.5 rounded bg-emerald-600 border border-emerald-700" />
+            <span className="w-2.5 h-2.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+            <span className="w-2.5 h-2.5 rounded bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800" />
+            <span className="w-2.5 h-2.5 rounded bg-emerald-300 dark:bg-emerald-800 border border-emerald-400 dark:border-emerald-700" />
+            <span className="w-2.5 h-2.5 rounded bg-emerald-600 border border-emerald-700 dark:border-emerald-500" />
             <span>More</span>
           </div>
         </div>
@@ -270,15 +259,15 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#64748b" />
               <YAxis tick={{ fontSize: 10 }} stroke="#64748b" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#0f172a', 
-                  borderColor: '#1e293b', 
-                  borderRadius: '8px', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#0f172a',
+                  borderColor: '#1e293b',
+                  borderRadius: '8px',
                   color: '#f8fafc',
                   fontSize: '11px',
                   padding: '6px 10px'
-                }} 
+                }}
               />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
               <Area type="monotone" dataKey="created" name="Created Issues" stroke="#2563eb" fillOpacity={1} fill="url(#colorCreated)" />

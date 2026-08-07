@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Markdown from 'react-markdown';
 import { JiraIssue, StatusCategory, PriorityName, JiraSubtask } from '../types';
-import { 
-  X, 
-  ExternalLink, 
-  Database, 
-  Clock, 
-  User, 
+import {
+  X,
+  ExternalLink,
+  Database,
+  Clock,
+  User,
   UserCheck,
   Hourglass,
   Loader2,
-  MessageSquare, 
-  Tag, 
-  Layers, 
-  Send, 
-  Copy, 
+  MessageSquare,
+  Tag,
+  Layers,
+  Send,
+  Copy,
   Check,
-  CheckCircle2,
-  AlertCircle,
   Pin,
   Eye,
   Zap,
@@ -25,14 +23,10 @@ import {
   ArrowDown,
   Minus,
   AlertTriangle,
-  Sparkles,
-  GitPullRequest,
   CheckSquare,
   Printer,
-  FileText,
   Timer,
   NotebookPen,
-  Save,
   Trash2,
   ChevronLeft,
   ChevronRight
@@ -438,7 +432,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 dark:text-slate-100 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-right duration-300">
-        
+
         {/* Drawer Header */}
         <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2 min-w-0">
@@ -556,7 +550,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          
+
           {/* Summary Heading */}
           <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
             {issue.summary}

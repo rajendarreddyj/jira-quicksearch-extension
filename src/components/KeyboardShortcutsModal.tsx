@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Keyboard, Command, Zap, Search, Eye, Filter, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react';
+import { X, Keyboard } from 'lucide-react';
 
 interface KeyboardShortcutsModalProps {
   onClose: () => void;

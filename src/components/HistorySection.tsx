@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SearchHistoryItem } from '../types';
-import { History, Pin, Trash2, ArrowRight, Search, Clock, Check, Download, Copy } from 'lucide-react';
+import { History, Pin, Trash2, ArrowRight, Clock, Check, Download, Copy } from 'lucide-react';
 
 interface HistorySectionProps {
   history: SearchHistoryItem[];
