@@ -360,6 +360,34 @@ export default function App() {
     }
   };
 
+  // Update Assignee in detail view
+  const handleUpdateIssueAssignee = (key: string, name: string, email: string) => {
+    const updateFn = (issue: JiraIssue): JiraIssue => {
+      if (issue.key.toUpperCase() === key.toUpperCase()) {
+        return {
+          ...issue,
+          assignee: {
+            name,
+            email,
+            avatar: issue.assignee.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+          },
+          updated: new Date().toISOString(),
+        };
+      }
+      return issue;
+    };
+
+    setSearchResults((prev) => prev.map(updateFn));
+    setCachedIssues((prev) => prev.map(updateFn));
+
+    if (selectedIssue && selectedIssue.key.toUpperCase() === key.toUpperCase()) {
+      const updated = updateFn(selectedIssue);
+      setSelectedIssue(updated);
+      cacheIssue(updated, settings.maxCachedTickets);
+      refreshCacheState();
+    }
+  };
+
   const handleFilterByLabel = (label: string) => {
     setSelectedIssue(null);
     setActiveTab('search');
@@ -598,11 +626,13 @@ export default function App() {
         onClose={() => setSelectedIssue(null)}
         onUpdateIssueStatus={handleUpdateIssueStatus}
         onUpdateIssuePriority={handleUpdateIssuePriority}
+        onUpdateIssueAssignee={handleUpdateIssueAssignee}
         onAddComment={handleAddComment}
         onTogglePinTicket={handleTogglePinTicket}
         onToggleWatchTicket={handleToggleWatchTicket}
         onFilterByLabel={handleFilterByLabel}
         jiraUrl={settings.jiraUrl}
+        currentUserEmail={settings.userEmail}
       />
 
       {/* Chrome Extension Manifest Exporter Modal */}

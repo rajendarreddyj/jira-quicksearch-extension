@@ -7,6 +7,9 @@ import {
   Database, 
   Clock, 
   User, 
+  UserCheck,
+  Hourglass,
+  Loader2,
   MessageSquare, 
   Tag, 
   Layers, 
@@ -38,11 +41,13 @@ interface IssueDetailModalProps {
   onClose: () => void;
   onUpdateIssueStatus?: (key: string, newStatusName: string, category: StatusCategory) => void;
   onUpdateIssuePriority?: (key: string, newPriorityName: PriorityName) => void;
+  onUpdateIssueAssignee?: (key: string, name: string, email: string) => void;
   onAddComment?: (key: string, commentText: string) => void;
   onTogglePinTicket?: (key: string) => void;
   onToggleWatchTicket?: (key: string) => void;
   onFilterByLabel?: (label: string) => void;
   jiraUrl: string;
+  currentUserEmail?: string;
 }
 
 export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
@@ -50,11 +55,13 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   onClose,
   onUpdateIssueStatus,
   onUpdateIssuePriority,
+  onUpdateIssueAssignee,
   onAddComment,
   onTogglePinTicket,
   onToggleWatchTicket,
   onFilterByLabel,
   jiraUrl,
+  currentUserEmail,
 }) => {
   const [newCommentText, setNewCommentText] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -63,35 +70,67 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   // Subtasks local state
   const [subtasks, setSubtasks] = useState<JiraSubtask[]>([]);
 
-  // Scratchpad / Local Notes state for this ticket
+  // Scratchpad / Local Notes state for this ticket with debounced auto-save
   const [scratchpadNote, setScratchpadNote] = useState<string>('');
-  const [scratchpadSaved, setScratchpadSaved] = useState<boolean>(false);
+  const [scratchpadSaveStatus, setScratchpadSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Load ticket scratchpad from localStorage whenever selected issue changes
   useEffect(() => {
     if (issue) {
       const storedNote = localStorage.getItem(`jira_scratchpad_${issue.key.toUpperCase()}`) || '';
       setScratchpadNote(storedNote);
-      setScratchpadSaved(false);
+      setScratchpadSaveStatus('idle');
     }
-  }, [issue]);
+  }, [issue?.key]);
 
-  const handleScratchpadChange = (text: string) => {
-    setScratchpadNote(text);
-    if (issue) {
-      localStorage.setItem(`jira_scratchpad_${issue.key.toUpperCase()}`, text);
-      setScratchpadSaved(true);
-      setTimeout(() => setScratchpadSaved(false), 2000);
-    }
-  };
+  // Debounced auto-save effect whenever scratchpadNote changes
+  useEffect(() => {
+    if (!issue) return;
+
+    const storageKey = `jira_scratchpad_${issue.key.toUpperCase()}`;
+    const stored = localStorage.getItem(storageKey) || '';
+
+    if (scratchpadNote === stored) return;
+
+    setScratchpadSaveStatus('saving');
+
+    const saveTimer = setTimeout(() => {
+      if (scratchpadNote.trim() === '') {
+        localStorage.removeItem(storageKey);
+      } else {
+        localStorage.setItem(storageKey, scratchpadNote);
+      }
+      setScratchpadSaveStatus('saved');
+
+      const idleTimer = setTimeout(() => {
+        setScratchpadSaveStatus('idle');
+      }, 2500);
+
+      return () => clearTimeout(idleTimer);
+    }, 350);
+
+    return () => clearTimeout(saveTimer);
+  }, [scratchpadNote, issue?.key]);
 
   const handleClearScratchpad = () => {
     setScratchpadNote('');
     if (issue) {
       localStorage.removeItem(`jira_scratchpad_${issue.key.toUpperCase()}`);
-      setScratchpadSaved(true);
-      setTimeout(() => setScratchpadSaved(false), 2000);
+      setScratchpadSaveStatus('saved');
+      setTimeout(() => setScratchpadSaveStatus('idle'), 2000);
     }
+  };
+
+  const handleAssignToMe = () => {
+    if (!issue || !onUpdateIssueAssignee) return;
+    const userEmail = currentUserEmail || 'user@example.com';
+    const namePart = userEmail.split('@')[0] || 'User';
+    const formattedName = namePart
+      .split('.')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+    onUpdateIssueAssignee(issue.key, formattedName, userEmail);
   };
 
   // Keyboard Shortcuts in Detail Modal (Alt+1, Alt+2, Alt+3, Alt+P, Cmd+P)
@@ -549,17 +588,84 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                   }`}
                 >
                   <Pin className={`w-3.5 h-3.5 ${issue.isPinned ? 'fill-slate-900' : 'text-amber-500'}`} />
-                  <span>{issue.isPinned ? 'Pinned to Top' : 'Pin Ticket to Top'}</span>
+                  <span>{issue.isPinned ? 'Pinned to Top' : 'Pin Ticket'}</span>
                 </button>
               )}
 
               <button
+                type="button"
                 onClick={handleCopyLink}
-                className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
+                className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Copy direct URL to Jira ticket"
               >
                 {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
-                <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
+                <span>{copiedLink ? 'Copied Link!' : 'Copy Link'}</span>
               </button>
+
+              <a
+                href={`${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-1.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                title="Open direct ticket in browser"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                <span>Open in Jira</span>
+              </a>
+            </div>
+          </div>
+
+          {/* TIME TRACKING & ESTIMATES SECTION */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <Timer className="w-3.5 h-3.5 text-blue-600" />
+                <span>Time Tracking & Estimates</span>
+              </div>
+              <span className="text-[10px] font-semibold text-slate-500">
+                Worklog Stats
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-medium text-slate-400 block">Original Estimate</span>
+                <div className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                  <Timer className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span>
+                    {issue.timeTracking?.originalEstimateText ||
+                      (issue.timeTracking?.originalEstimateSeconds
+                        ? `${Math.round(issue.timeTracking.originalEstimateSeconds / 3600)}h`
+                        : '3d (24h)')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-medium text-slate-400 block">Time Spent</span>
+                <div className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    {issue.timeTracking?.timeSpentText ||
+                      (issue.timeTracking?.timeSpentSeconds
+                        ? `${Math.round(issue.timeTracking.timeSpentSeconds / 3600)}h`
+                        : '2d (16h)')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-medium text-slate-400 block">Remaining</span>
+                <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1 mt-0.5">
+                  <Hourglass className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>
+                    {issue.timeTracking?.remainingEstimateText ||
+                      (issue.timeTracking?.remainingEstimateSeconds
+                        ? `${Math.round(issue.timeTracking.remainingEstimateSeconds / 3600)}h`
+                        : '1d (8h)')}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -611,7 +717,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             </div>
           </div>
 
-          {/* PERSONAL TICKET SCRATCHPAD */}
+          {/* PERSONAL TICKET SCRATCHPAD (Auto-Saving) */}
           <div className="p-3.5 bg-blue-50/70 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl space-y-2 shadow-2xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
@@ -619,9 +725,14 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 <span>Personal Ticket Scratchpad</span>
               </div>
               <div className="flex items-center gap-2">
-                {scratchpadSaved && (
+                {scratchpadSaveStatus === 'saving' && (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 rounded flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                  </span>
+                )}
+                {scratchpadSaveStatus === 'saved' && (
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Saved locally
+                    <Check className="w-3 h-3" /> Auto-saved
                   </span>
                 )}
                 {scratchpadNote && (
@@ -629,7 +740,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                     type="button"
                     onClick={handleClearScratchpad}
                     title="Clear Scratchpad Note"
-                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -640,12 +751,12 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             <textarea
               rows={3}
               value={scratchpadNote}
-              onChange={(e) => handleScratchpadChange(e.target.value)}
-              placeholder="Jot down quick personal notes, draft code snippets, or reminder checklists for this ticket... (Saved locally in browser cache)"
+              onChange={(e) => setScratchpadNote(e.target.value)}
+              placeholder="Jot down quick personal notes, draft code snippets, or reminder checklists for this ticket... (Auto-saved immediately on typing)"
               className="w-full text-xs p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none resize-y"
             />
             <div className="flex items-center justify-between text-[10px] text-slate-400">
-              <span>Private notes are stored only on this device (never sent to Jira).</span>
+              <span>Private notes are auto-saved in your local browser cache.</span>
               <span className="font-mono">{scratchpadNote.length} chars</span>
             </div>
           </div>
@@ -653,7 +764,20 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           {/* Attributes Grid */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
             <div>
-              <span className="text-slate-400 text-[11px] block font-medium">Assignee</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Assignee</span>
+                {onUpdateIssueAssignee && (
+                  <button
+                    type="button"
+                    onClick={handleAssignToMe}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Assign this ticket to my email account"
+                  >
+                    <UserCheck className="w-3 h-3 text-blue-600" />
+                    <span>Assign to Me</span>
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800">
                 {issue.assignee.avatar ? (
                   <img src={issue.assignee.avatar} className="w-4 h-4 rounded-full border border-slate-200" alt="" />
@@ -661,6 +785,11 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                   <User className="w-3.5 h-3.5 text-slate-400" />
                 )}
                 <span>{issue.assignee.name}</span>
+                {currentUserEmail && issue.assignee.email?.toLowerCase() === currentUserEmail.toLowerCase() && (
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200">
+                    You
+                  </span>
+                )}
               </div>
             </div>
 

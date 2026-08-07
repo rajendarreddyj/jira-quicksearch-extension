@@ -18,7 +18,8 @@ import {
   Keyboard,
   Bell,
   Sun,
-  Moon
+  Moon,
+  ExternalLink
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -109,6 +110,22 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
+          {/* Open in Tab / Popout Extension Button */}
+          <button
+            onClick={() => {
+              if ((window as any).chrome?.tabs?.create) {
+                (window as any).chrome.tabs.create({ url: window.location.href });
+              } else {
+                window.open(window.location.href, '_blank');
+              }
+            }}
+            title="Open Extension in a New Tab / Expand View"
+            className="flex items-center gap-1 px-2 py-1 bg-blue-950/80 hover:bg-blue-900 text-blue-200 rounded-md text-[11px] font-semibold transition-colors border border-blue-700/60 shadow-2xs"
+          >
+            <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
+            <span className="hidden sm:inline">Open Tab</span>
+          </button>
+
           {/* View Mode Toggle (Popup vs Full Width) */}
           <button
             onClick={toggleViewMode}
@@ -187,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Navigation Tabs Bar */}
-      <nav className="flex items-center justify-around px-2 py-1 bg-slate-900/90 text-xs">
+      <nav className="flex items-center justify-between px-1.5 sm:px-2 py-1 bg-slate-900/90 text-xs overflow-x-auto whitespace-nowrap gap-1">
         <button
           onClick={() => setActiveTab('search')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-medium transition-all ${
