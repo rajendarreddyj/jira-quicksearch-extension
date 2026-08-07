@@ -15,7 +15,8 @@ import {
   Workflow,
   Activity,
   HelpCircle,
-  Keyboard
+  Keyboard,
+  Bell
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,6 +27,8 @@ interface HeaderProps {
   onOpenManifestModal: () => void;
   onOpenCiCdModal?: () => void;
   onOpenShortcutsModal?: () => void;
+  onOpenNotifications?: () => void;
+  notificationsCount?: number;
   cachedCount: number;
   historyCount: number;
 }
@@ -37,6 +40,9 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateSettings,
   onOpenManifestModal,
   onOpenCiCdModal,
+  onOpenShortcutsModal,
+  onOpenNotifications,
+  notificationsCount,
   cachedCount,
   historyCount,
 }) => {
@@ -128,6 +134,22 @@ export const Header: React.FC<HeaderProps> = ({
             <Download className="w-3 h-3 text-blue-400" />
             <span className="hidden sm:inline">Export Ext</span>
           </button>
+
+          {/* Pinned Ticket Updates Notification Bell */}
+          {onOpenNotifications && (
+            <button
+              onClick={onOpenNotifications}
+              title="Pinned Tickets Live Update Notifications"
+              className="relative p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-xs transition-colors border border-slate-700 flex items-center justify-center font-bold"
+            >
+              <Bell className="w-3.5 h-3.5 text-blue-400" />
+              {!!notificationsCount && notificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-slate-900 animate-pulse">
+                  {notificationsCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Keyboard Shortcuts Cheat Sheet Button */}
           {onOpenShortcutsModal && (

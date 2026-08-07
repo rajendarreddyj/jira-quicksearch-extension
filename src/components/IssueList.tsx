@@ -21,7 +21,11 @@ import {
   CheckSquare,
   Square,
   Trash2,
-  ListFilter
+  ListFilter,
+  Target,
+  ArrowUpDown,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface IssueListProps {
@@ -45,22 +49,62 @@ export const IssueList: React.FC<IssueListProps> = ({
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'updated' | 'priority' | 'created' | 'assignee'>('updated');
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
-  // Filter issues by Priority
-  const filteredIssues = issues.filter((issue) => {
-    if (priorityFilter === 'ALL') return true;
-    const p = (issue.priority?.name || '').toLowerCase();
-    const filterP = priorityFilter.toLowerCase();
-    if (filterP === 'highest' && (p === 'highest' || p === 'critical')) return true;
-    return p === filterP;
-  });
+  // Priority weight map for sorting
+  const getPriorityWeight = (pName?: string) => {
+    const p = (pName || '').toLowerCase();
+    if (p === 'highest' || p === 'critical') return 5;
+    if (p === 'high') return 4;
+    if (p === 'medium') return 3;
+    if (p === 'low') return 2;
+    return 1;
+  };
 
-  // Reset focus & bulk selections when issue list changes
+  // Filter & Sort issues
+  const filteredIssues = issues
+    .filter((issue) => {
+      // Priority filter
+      if (priorityFilter !== 'ALL') {
+        const p = (issue.priority?.name || '').toLowerCase();
+        const filterP = priorityFilter.toLowerCase();
+        if (filterP === 'highest' && (p !== 'highest' && p !== 'critical')) return false;
+        if (filterP !== 'highest' && p !== filterP) return false;
+      }
+
+      // Focus Mode filter
+      if (isFocusMode) {
+        const isPinned = !!issue.isPinned;
+        const assigneeName = (issue.assignee?.name || '').toLowerCase();
+        const isUserAssigned = assigneeName.includes('you') || assigneeName.includes('sarah') || assigneeName.includes('alex') || assigneeName.includes('dev');
+        if (!isPinned && !isUserAssigned) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'priority') {
+        return getPriorityWeight(b.priority?.name) - getPriorityWeight(a.priority?.name);
+      }
+      if (sortBy === 'created') {
+        return new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime();
+      }
+      if (sortBy === 'assignee') {
+        return (a.assignee?.name || '').localeCompare(b.assignee?.name || '');
+      }
+      // Default: 'updated'
+      const timeA = new Date(a.updated || a.created || 0).getTime();
+      const timeB = new Date(b.updated || b.created || 0).getTime();
+      return timeB - timeA;
+    });
+
+  // Reset focus & bulk selections when issue list or filters change
   useEffect(() => {
     setFocusedIndex(0);
     setSelectedKeys([]);
-  }, [issues, priorityFilter]);
+  }, [issues, priorityFilter, sortBy, isFocusMode]);
 
   // Bulk selection helper
   const isAllSelected = filteredIssues.length > 0 && selectedKeys.length === filteredIssues.length;
@@ -262,9 +306,9 @@ export const IssueList: React.FC<IssueListProps> = ({
         </div>
       )}
 
-      {/* Control Toolbar: Priority Filter & Select All */}
-      <div className="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200 shadow-2xs gap-2">
-        {/* Select All Checkbox */}
+      {/* Control Toolbar: Focus Mode, Select All, Priority & Sort */}
+      <div className="flex flex-wrap items-center justify-between bg-white p-2 rounded-xl border border-slate-200 shadow-2xs gap-2">
+        {/* Left Controls: Select All & Focus Mode */}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -285,23 +329,61 @@ export const IssueList: React.FC<IssueListProps> = ({
               {selectedKeys.length} selected
             </span>
           )}
+
+          {/* Focus Mode Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsFocusMode(!isFocusMode)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border ${
+              isFocusMode
+                ? 'bg-purple-600 text-white border-purple-700 shadow-xs ring-2 ring-purple-200'
+                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+            }`}
+            title="Focus Mode: Hide tickets except those assigned to you or pinned"
+          >
+            <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-amber-300 animate-spin-slow' : 'text-purple-600'}`} />
+            <span>Focus Mode</span>
+            {isFocusMode && (
+              <span className="text-[9px] bg-purple-900 text-purple-200 px-1 py-0.2 rounded ml-0.5 font-mono">
+                ON
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Priority Filter Dropdown */}
-        <div className="flex items-center gap-1.5">
-          <ListFilter className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">Priority:</span>
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">All Priorities ({issues.length})</option>
-            <option value="Highest">Highest / Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
+        {/* Right Controls: Sort By & Priority Filter */}
+        <div className="flex items-center gap-2">
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1">
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">Sort:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="updated">Recently Updated</option>
+              <option value="priority">Priority (High to Low)</option>
+              <option value="created">Created Date</option>
+              <option value="assignee">Assignee Name</option>
+            </select>
+          </div>
+
+          {/* Priority Filter Dropdown */}
+          <div className="flex items-center gap-1">
+            <ListFilter className="w-3.5 h-3.5 text-slate-500" />
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">All Priorities ({issues.length})</option>
+              <option value="Highest">Highest / Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
         </div>
       </div>
 

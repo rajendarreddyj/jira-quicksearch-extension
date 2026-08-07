@@ -260,7 +260,8 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
             {/* Status Breakdown Legend & Counts */}
             <div className="space-y-1.5">
               {chartData.map((item) => {
-                const pct = Math.round((item.value / cachedIssues.length) * 100);
+                const countVal = Number(item.value) || 0;
+                const pct = Math.round((countVal / Math.max(1, cachedIssues.length)) * 100);
                 return (
                   <div key={item.name} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5 min-w-0">

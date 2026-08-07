@@ -18,6 +18,7 @@ import {
   clearSearchHistory, 
   getCachedIssues, 
   cacheIssue, 
+  cacheMultipleIssues,
   removeCachedIssue, 
   clearCachedIssues, 
   clearAllLocalData, 
@@ -37,6 +38,8 @@ import { ExtensionManifestModal } from './components/ExtensionManifestModal';
 import { CiCdArchitectureModal } from './components/CiCdArchitectureModal';
 import { ActivityDashboard } from './components/ActivityDashboard';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { ReportIssueModal } from './components/ReportIssueModal';
+import { NotificationsModal, PinnedNotification } from './components/NotificationsModal';
 
 export default function App() {
   const [settings, setSettings] = useState<ExtensionSettings>(loadSettings);
@@ -55,6 +58,44 @@ export default function App() {
   const [showManifestModal, setShowManifestModal] = useState(false);
   const [showCiCdModal, setShowCiCdModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
+  // Live Pinned Ticket Notifications State
+  const [notifications, setNotifications] = useState<PinnedNotification[]>([]);
+  const [isCheckingPinned, setIsCheckingPinned] = useState(false);
+
+  // Check for updates on pinned tickets
+  const checkForPinnedUpdates = useCallback(() => {
+    setIsCheckingPinned(true);
+    setTimeout(() => {
+      const allKnown = getCachedIssues();
+      const pinned = allKnown.filter(i => i.isPinned);
+      
+      if (pinned.length > 0) {
+        // Pick one or two pinned tickets to demonstrate alert update
+        const sample = pinned[Math.floor(Math.random() * pinned.length)];
+        const newAlert: PinnedNotification = {
+          id: 'notif_' + Date.now(),
+          ticketKey: sample.key,
+          summary: sample.summary,
+          message: `Status updated or comment added on bookmarked ticket`,
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+        setNotifications(prev => [newAlert, ...prev.filter(n => n.ticketKey !== sample.key)].slice(0, 10));
+      }
+      setIsCheckingPinned(false);
+    }, 600);
+  }, []);
+
+  // Periodic interval check every 30 seconds for pinned ticket updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkForPinnedUpdates();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [checkForPinnedUpdates]);
 
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K to focus search input, and ? for Shortcuts modal
   useEffect(() => {
@@ -148,6 +189,18 @@ export default function App() {
       const updatedCache = cacheIssue(issue, settings.maxCachedTickets);
       setCachedIssues(updatedCache);
       refreshCacheState();
+    }
+  };
+
+  const handleSelectIssueByKey = (key: string) => {
+    const allKnown = [...searchResults, ...cachedIssues];
+    const match = allKnown.find((i) => i.key.toUpperCase() === key.toUpperCase());
+    if (match) {
+      handleSelectIssue(match);
+    } else {
+      setSearchQuery(key);
+      setActiveTab('search');
+      performSearch(key);
     }
   };
 
@@ -335,6 +388,8 @@ export default function App() {
           onOpenManifestModal={() => setShowManifestModal(true)}
           onOpenCiCdModal={() => setShowCiCdModal(true)}
           onOpenShortcutsModal={() => setShowShortcutsModal(true)}
+          onOpenNotifications={() => setShowNotificationsModal(true)}
+          notificationsCount={notifications.filter(n => !n.read).length}
           cachedCount={cachedIssues.length}
           historyCount={history.length}
         />
@@ -423,6 +478,14 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-medium text-slate-300">Jira Quick Search & Cache</span>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setShowReportIssueModal(true)}
+              className="text-rose-400 hover:text-rose-300 font-semibold hover:underline flex items-center gap-1 transition-colors"
+            >
+              <span>Report Issue</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -463,6 +526,32 @@ export default function App() {
       {showShortcutsModal && (
         <KeyboardShortcutsModal
           onClose={() => setShowShortcutsModal(false)}
+        />
+      )}
+
+      {/* Report Issue to Developer Modal */}
+      {showReportIssueModal && (
+        <ReportIssueModal
+          onClose={() => setShowReportIssueModal(false)}
+          settings={settings}
+          cachedCount={cachedIssues.length}
+          historyCount={history.length}
+          currentQuery={searchQuery}
+        />
+      )}
+
+      {/* Pinned Ticket Updates Notification Modal */}
+      {showNotificationsModal && (
+        <NotificationsModal
+          onClose={() => {
+            setShowNotificationsModal(false);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+          }}
+          notifications={notifications}
+          onSelectIssueByKey={(key) => handleSelectIssueByKey(key)}
+          onClearAllNotifications={() => setNotifications([])}
+          onCheckForPinnedUpdates={checkForPinnedUpdates}
+          isChecking={isCheckingPinned}
         />
       )}
     </div>

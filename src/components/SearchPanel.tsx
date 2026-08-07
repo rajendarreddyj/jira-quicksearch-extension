@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ExtensionSettings, SearchHistoryItem } from '../types';
 import { Search, X, Filter, Code, Clock, ArrowRight, Zap, HelpCircle, UserCheck, Pin, Mic, MicOff } from 'lucide-react';
+import { JqlHelperModal } from './JqlHelperModal';
 
 interface SearchPanelProps {
   searchQuery: string;
@@ -396,45 +397,16 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         </button>
       </div>
 
-      {/* JQL Helper Modal / Card */}
+      {/* JQL Helper Modal */}
       {showJqlHelp && (
-        <div className="p-3 bg-slate-900 text-slate-100 rounded-lg text-xs space-y-2 border border-slate-800 shadow-lg animate-in fade-in duration-200">
-          <div className="flex items-center justify-between font-semibold border-b border-slate-800 pb-1 text-blue-300">
-            <span className="flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5" />
-              Jira Query Language (JQL) Cheatsheet
-            </span>
-            <button onClick={() => setShowJqlHelp(false)} className="text-slate-400 hover:text-white">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
-            <div 
-              onClick={() => applyQuickFilter('project = PROJ AND status = "In Progress"')}
-              className="p-1.5 bg-slate-800 rounded cursor-pointer hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-emerald-400">project</span> = "PROJ" <span className="text-amber-300">AND</span> status = "In Progress"
-            </div>
-            <div 
-              onClick={() => applyQuickFilter('priority IN (High, Highest)')}
-              className="p-1.5 bg-slate-800 rounded cursor-pointer hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-emerald-400">priority</span> <span className="text-purple-300">IN</span> (High, Highest)
-            </div>
-            <div 
-              onClick={() => applyQuickFilter('summary ~ "cache" OR text ~ "storage"')}
-              className="p-1.5 bg-slate-800 rounded cursor-pointer hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-emerald-400">summary</span> ~ "cache" <span className="text-amber-300">OR</span> text ~ "storage"
-            </div>
-            <div 
-              onClick={() => applyQuickFilter('updated >= -7d ORDER BY updated DESC')}
-              className="p-1.5 bg-slate-800 rounded cursor-pointer hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-emerald-400">updated</span> &gt;= -7d <span className="text-blue-300">ORDER BY</span> updated DESC
-            </div>
-          </div>
-        </div>
+        <JqlHelperModal
+          onClose={() => setShowJqlHelp(false)}
+          onApplyQuery={(q) => {
+            setSearchQuery(q);
+            onSearchSubmit(q);
+          }}
+          currentProjectKey={availableProjects[0] || settings.projectKey || 'PROJ'}
+        />
       )}
     </div>
   );
