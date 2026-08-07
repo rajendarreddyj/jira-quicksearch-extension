@@ -1,0 +1,484 @@
+import React, { useState } from 'react';
+import { JiraIssue, StatusCategory, PriorityName } from '../types';
+import { 
+  X, 
+  ExternalLink, 
+  Database, 
+  Clock, 
+  User, 
+  MessageSquare, 
+  Tag, 
+  Layers, 
+  Send, 
+  Copy, 
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  Pin,
+  Zap,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  AlertTriangle,
+  Sparkles
+} from 'lucide-react';
+
+interface IssueDetailModalProps {
+  issue: JiraIssue | null;
+  onClose: () => void;
+  onUpdateIssueStatus?: (key: string, newStatusName: string, category: StatusCategory) => void;
+  onUpdateIssuePriority?: (key: string, newPriorityName: PriorityName) => void;
+  onAddComment?: (key: string, commentText: string) => void;
+  onTogglePinTicket?: (key: string) => void;
+  jiraUrl: string;
+}
+
+export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
+  issue,
+  onClose,
+  onUpdateIssueStatus,
+  onUpdateIssuePriority,
+  onAddComment,
+  onTogglePinTicket,
+  jiraUrl,
+}) => {
+  const [newCommentText, setNewCommentText] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  if (!issue) return null;
+
+  const handleCopyLink = () => {
+    const link = issue.url || `${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleStatusChange = (statusName: string, category: StatusCategory) => {
+    if (onUpdateIssueStatus) {
+      onUpdateIssueStatus(issue.key, statusName, category);
+    }
+  };
+
+  const handleSendComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim() || !onAddComment) return;
+    onAddComment(issue.key, newCommentText.trim());
+    setNewCommentText('');
+  };
+
+  const formatTime = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      return new Date(isoString).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  const formatHours = (hours: number) => {
+    if (hours <= 0) return '0h';
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const rem = hours % 24;
+    return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
+  };
+
+  const statusTimeData = issue.statusTime || [
+    { statusName: 'To Do', category: 'to-do' as const, hours: 24 },
+    { statusName: 'In Progress', category: 'in-progress' as const, hours: 48 },
+  ];
+
+  const totalStatusHours = statusTimeData.reduce((acc, curr) => acc + curr.hours, 0);
+
+  const getStatusBgColor = (cat: string, index: number) => {
+    switch (cat) {
+      case 'done': return 'bg-emerald-500';
+      case 'in-progress': return index % 2 === 0 ? 'bg-blue-500' : 'bg-amber-500';
+      default: return 'bg-slate-400';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+      <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-in slide-in-from-right duration-300">
+        
+        {/* Drawer Header */}
+        <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono font-bold text-xs bg-blue-600 px-2 py-0.5 rounded text-white shadow-xs">
+              {issue.key}
+            </span>
+            <span className="text-xs text-slate-300 truncate font-medium">
+              {issue.issueType.name}
+            </span>
+            {issue.isCachedOffline && (
+              <span className="flex items-center gap-1 bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/30">
+                <Database className="w-2.5 h-2.5 text-emerald-400" />
+                Cached Offline
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {onTogglePinTicket && (
+              <button
+                onClick={() => onTogglePinTicket(issue.key)}
+                title={issue.isPinned ? 'Unpin ticket' : 'Pin ticket'}
+                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-semibold ${
+                  issue.isPinned
+                    ? 'bg-amber-400 text-slate-900 hover:bg-amber-300'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Pin className={`w-3.5 h-3.5 ${issue.isPinned ? 'fill-slate-900' : ''}`} />
+                <span className="hidden sm:inline">{issue.isPinned ? 'Pinned' : 'Pin'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleCopyLink}
+              title="Copy link to Jira ticket"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+
+            <a
+              href={issue.url || `${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`}
+              target="_blank"
+              rel="noreferrer"
+              title="Open issue directly in Jira"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors ml-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          
+          {/* Summary Heading */}
+          <h2 className="text-base font-bold text-slate-900 leading-snug">
+            {issue.summary}
+          </h2>
+
+          {/* QUICK ACTIONS SECTION */}
+          <div className="p-3.5 bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-200/80 rounded-xl space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                <span>Quick Actions</span>
+              </div>
+              <span className="text-[10px] font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded border border-blue-200">
+                Fast Ticket Management
+              </span>
+            </div>
+
+            {/* Status & Priority Quick Modifiers */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {/* Quick Status */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-1.5 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Status
+                </span>
+                <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    onClick={() => handleStatusChange('To Do', 'to-do')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      issue.status.category === 'to-do'
+                        ? 'bg-slate-800 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    To Do
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('In Progress', 'in-progress')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      issue.status.category === 'in-progress'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                    }`}
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('Done', 'done')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      issue.status.category === 'done'
+                        ? 'bg-emerald-600 text-white shadow-2xs'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    }`}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+
+              {/* Priority Selector */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-1.5 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Priority
+                </span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {['Highest', 'High', 'Medium', 'Low'].map((pName) => {
+                    const isCurrent = issue.priority.name.toLowerCase() === pName.toLowerCase();
+                    return (
+                      <button
+                        key={pName}
+                        onClick={() => onUpdateIssuePriority && onUpdateIssuePriority(issue.key, pName as PriorityName)}
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-0.5 ${
+                          isCurrent
+                            ? pName === 'Highest'
+                              ? 'bg-rose-600 text-white shadow-2xs'
+                              : pName === 'High'
+                              ? 'bg-orange-600 text-white shadow-2xs'
+                              : pName === 'Medium'
+                              ? 'bg-amber-600 text-white shadow-2xs'
+                              : 'bg-blue-600 text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {pName === 'Highest' && <AlertTriangle className="w-2.5 h-2.5" />}
+                        {pName === 'High' && <ArrowUp className="w-2.5 h-2.5" />}
+                        {pName === 'Medium' && <Minus className="w-2.5 h-2.5" />}
+                        {pName === 'Low' && <ArrowDown className="w-2.5 h-2.5" />}
+                        <span>{pName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Pin to Top & Quick Copy Bar */}
+            <div className="flex items-center gap-2 pt-1">
+              {onTogglePinTicket && (
+                <button
+                  onClick={() => onTogglePinTicket(issue.key)}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs border ${
+                    issue.isPinned
+                      ? 'bg-amber-400 hover:bg-amber-500 text-slate-900 border-amber-500'
+                      : 'bg-white hover:bg-amber-50 text-slate-800 border-slate-300 hover:border-amber-300'
+                  }`}
+                >
+                  <Pin className={`w-3.5 h-3.5 ${issue.isPinned ? 'fill-slate-900' : 'text-amber-500'}`} />
+                  <span>{issue.isPinned ? 'Pinned to Top' : 'Pin Ticket to Top'}</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleCopyLink}
+                className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
+              >
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TIME SPENT IN EACH STATUS ANALYTICS SECTION */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-blue-600" />
+                <span>Time Spent in Each Status</span>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded-md">
+                Total: {formatHours(totalStatusHours)}
+              </span>
+            </div>
+
+            {/* Stacked Progress Bar */}
+            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+              {statusTimeData.map((st, idx) => {
+                const pct = totalStatusHours > 0 ? (st.hours / totalStatusHours) * 100 : 0;
+                return (
+                  <div
+                    key={st.statusName + idx}
+                    style={{ width: `${pct}%` }}
+                    className={`h-full transition-all ${getStatusBgColor(st.category, idx)}`}
+                    title={`${st.statusName}: ${formatHours(st.hours)} (${Math.round(pct)}%)`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Status Duration Grid Breakdown */}
+            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+              {statusTimeData.map((st, idx) => {
+                const pct = totalStatusHours > 0 ? Math.round((st.hours / totalStatusHours) * 100) : 0;
+                return (
+                  <div key={st.statusName + idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusBgColor(st.category, idx)}`} />
+                      <span className="font-medium text-slate-700 truncate text-[11px]">
+                        {st.statusName}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-900 shrink-0">
+                      {formatHours(st.hours)} <span className="text-[10px] text-slate-400 font-normal">({pct}%)</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Attributes Grid */}
+          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <div>
+              <span className="text-slate-400 text-[11px] block font-medium">Assignee</span>
+              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800">
+                {issue.assignee.avatar ? (
+                  <img src={issue.assignee.avatar} className="w-4 h-4 rounded-full border border-slate-200" alt="" />
+                ) : (
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span>{issue.assignee.name}</span>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-slate-400 text-[11px] block font-medium">Reporter</span>
+              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span>{issue.reporter.name}</span>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-slate-400 text-[11px] block font-medium">Priority</span>
+              <span className="font-semibold text-slate-800 block mt-1">
+                {issue.priority.name}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-400 text-[11px] block font-medium">Fix Version</span>
+              <span className="font-semibold text-slate-800 block mt-1">
+                {issue.fixVersion || 'Unassigned'}
+              </span>
+            </div>
+
+            {issue.storyPoints !== undefined && (
+              <div>
+                <span className="text-slate-400 text-[11px] block font-medium">Story Points</span>
+                <span className="font-semibold text-slate-800 block mt-1">
+                  {issue.storyPoints} pts
+                </span>
+              </div>
+            )}
+
+            <div>
+              <span className="text-slate-400 text-[11px] block font-medium">Updated</span>
+              <span className="text-slate-700 block mt-1">
+                {formatTime(issue.updated)}
+              </span>
+            </div>
+          </div>
+
+          {/* Components & Labels */}
+          {(issue.components.length > 0 || issue.labels.length > 0) && (
+            <div className="space-y-2">
+              {issue.components.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
+                    <Layers className="w-3 h-3" /> Components:
+                  </span>
+                  {issue.components.map(comp => (
+                    <span key={comp} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium text-[11px]">
+                      {comp}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {issue.labels.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> Labels:
+                  </span>
+                  {issue.labels.map(lbl => (
+                    <span key={lbl} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium text-[11px]">
+                      {lbl}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description Section */}
+          <div className="space-y-1.5 pt-2 border-t border-slate-200">
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Description
+            </h3>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 space-y-2 whitespace-pre-wrap leading-relaxed font-sans">
+              {issue.description}
+            </div>
+          </div>
+
+          {/* Comments Thread Section */}
+          <div className="space-y-3 pt-2 border-t border-slate-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                Comments ({issue.comments.length})
+              </h3>
+            </div>
+
+            {/* Existing Comments */}
+            <div className="space-y-2">
+              {issue.comments.map((comment) => (
+                <div key={comment.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1 text-xs">
+                  <div className="flex items-center justify-between font-semibold text-slate-800 text-[11px]">
+                    <span className="text-blue-700">{comment.author}</span>
+                    <span className="text-slate-400 font-normal">{formatTime(comment.created)}</span>
+                  </div>
+                  <p className="text-slate-700 leading-normal">{comment.body}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Comment Input */}
+            <form onSubmit={handleSendComment} className="pt-1 flex items-center gap-2">
+              <input
+                type="text"
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                placeholder="Add an offline draft comment..."
+                className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+              <button
+                type="submit"
+                disabled={!newCommentText.trim()}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1 shadow-xs"
+              >
+                <Send className="w-3 h-3" />
+                <span>Post</span>
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+};
