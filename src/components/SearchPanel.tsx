@@ -147,7 +147,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   };
 
   return (
-    <div className="bg-white border-b border-slate-200 p-3 space-y-2.5 shadow-xs">
+    <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-3 space-y-2.5 shadow-xs">
       {/* Search Bar Input */}
       <div className="relative">
         <div className="relative flex items-center">
@@ -160,7 +160,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={() => setShowHistoryDropdown(true)}
             placeholder="Search key (PROJ-101), summary, or JQL query... (⌘K)"
-            className="w-full pl-9 pr-28 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner"
+            className="w-full pl-9 pr-28 py-2 text-xs bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-inner"
           />
 
           {/* Right Action Icons & Voice Search & Shortcut badge */}
@@ -169,10 +169,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             <button
               type="button"
               onClick={startVoiceSearch}
-              className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+              className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
                 isListening
                   ? 'bg-rose-600 text-white animate-pulse shadow-md ring-2 ring-rose-400'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200'
               }`}
               title={isListening ? 'Listening for voice input...' : 'Click to trigger Voice Search (Web Speech API)'}
             >
@@ -232,17 +232,17 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         {/* Quick History Dropdown */}
         {showHistoryDropdown && searchHistory.length > 0 && !searchQuery && (
           <div 
-            className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-20 py-1 max-h-56 overflow-y-auto"
+            className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-20 py-1 max-h-56 overflow-y-auto"
             onMouseLeave={() => setShowHistoryDropdown(false)}
           >
-            <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100">
+            <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 dark:border-slate-700">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-slate-400" />
                 Recent Search Queries
               </span>
               <button 
                 onClick={() => setShowHistoryDropdown(false)}
-                className="text-slate-400 hover:text-slate-600 text-[10px]"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[10px]"
               >
                 Close
               </button>
@@ -251,19 +251,19 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               <button
                 key={item.id}
                 onClick={() => selectHistoryItem(item)}
-                className="w-full px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-blue-50 flex items-center justify-between group transition-colors"
+                className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center justify-between group transition-colors"
               >
                 <div className="flex items-center gap-2 truncate pr-2">
                   {item.pinned && (
-                    <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.2 rounded font-medium">
+                    <span className="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 px-1 py-0.2 rounded font-medium">
                       Pinned
                     </span>
                   )}
-                  <span className="font-mono text-slate-800 text-[11px] truncate">{item.query}</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-100 text-[11px] truncate">{item.query}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 shrink-0">
                   <span>{item.resultCount} results</span>
-                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                 </div>
               </button>
             ))}
@@ -272,11 +272,11 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
 
         {/* Live Search Suggestions Dropdown */}
         {activeSuggestions.length > 0 && searchQuery.trim().length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-xl z-20 py-1 max-h-60 overflow-y-auto animate-in fade-in duration-150">
-            <div className="px-3 py-1 text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center justify-between border-b border-blue-100 bg-blue-50/50">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-lg shadow-xl z-20 py-1 max-h-60 overflow-y-auto animate-in fade-in duration-150">
+            <div className="px-3 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center justify-between border-b border-blue-100 dark:border-slate-700 bg-blue-50/50 dark:bg-slate-800/80">
               <span className="flex items-center gap-1">
-                <Zap className="w-3 h-3 text-blue-600" />
-                JQL & History Auto-Complete Suggestions
+                <Zap className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                JQL &amp; History Auto-Complete Suggestions
               </span>
               <span className="text-[9px] text-slate-400 font-normal">Click or press Tab</span>
             </div>
@@ -288,21 +288,21 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   setSearchQuery(sug.label);
                   onSearchSubmit(sug.label);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-blue-50 flex items-center justify-between group transition-colors border-b border-slate-50 last:border-none"
+                className="w-full px-3 py-1.5 text-left text-xs text-slate-800 dark:text-slate-100 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center justify-between group transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-none"
               >
                 <div className="flex items-center gap-2 truncate pr-2">
                   <span
                     className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
                       sug.type === 'history'
-                        ? 'bg-purple-100 text-purple-700'
+                        ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
                         : sug.type === 'project'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-blue-100 text-blue-700'
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300'
+                        : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
                     }`}
                   >
                     {sug.type === 'history' ? 'History' : sug.type === 'project' ? 'Project' : 'JQL'}
                   </span>
-                  <span className="font-mono text-xs font-semibold text-slate-800 truncate">{sug.label}</span>
+                  <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{sug.label}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 shrink-0">
                   <span>{sug.meta}</span>
@@ -313,12 +313,12 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                     title="Copy JQL string to clipboard"
                   >
                     {copiedSugLabel === sug.label ? (
-                      <Check className="w-3 h-3 text-emerald-600" />
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <Copy className="w-3 h-3 text-slate-400 hover:text-blue-600" />
+                      <Copy className="w-3 h-3 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" />
                     )}
                   </button>
-                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                 </div>
               </button>
             ))}

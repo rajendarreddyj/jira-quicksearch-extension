@@ -130,19 +130,19 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
   return (
     <div className="p-3 space-y-4 animate-in fade-in">
       {/* Top Banner KPI Summary */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-2xl border border-slate-800 shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs dark:shadow-md transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-500/40 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-blue-400" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-600/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/40 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
             <h3 className="text-sm font-bold flex items-center gap-2">
-              <span>Issue Activity & Update Heatmap</span>
-              <span className="text-[10px] font-mono bg-blue-900 text-blue-200 px-2 py-0.5 rounded border border-blue-700">
-                Last 30 Days
+              <span>Issue Activity &amp; Update Heatmap</span>
+              <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700">
+                Last {timeRangeDays} Days
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Tracking issue creations, transitions, and comment updates
             </p>
           </div>
@@ -151,7 +151,7 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportIssuesCSV}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 border border-emerald-500"
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 border border-emerald-500 cursor-pointer"
             title="Export currently displayed issues list to CSV for team reports"
           >
             <Download className="w-3.5 h-3.5" />
@@ -159,20 +159,20 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
           </button>
           <button
             onClick={() => setTimeRangeDays(14)}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               timeRangeDays === 14
                 ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             14 Days
           </button>
           <button
             onClick={() => setTimeRangeDays(30)}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               timeRangeDays === 30
                 ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             30 Days

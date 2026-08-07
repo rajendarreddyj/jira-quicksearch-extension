@@ -468,25 +468,25 @@ export const IssueList: React.FC<IssueListProps> = ({
       </div>
 
       {/* Control Toolbar: Focus Mode, Select All, Priority & Sort */}
-      <div className="flex flex-wrap items-center justify-between bg-white p-2 rounded-xl border border-slate-200 shadow-2xs gap-2">
+      <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs gap-2">
         {/* Left Controls: Select All & Focus Mode */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleToggleSelectAll}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
           >
             {isAllSelected ? (
-              <CheckSquare className="w-4 h-4 text-blue-600" />
+              <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             ) : selectedKeys.length > 0 ? (
               <CheckSquare className="w-4 h-4 text-blue-400" />
             ) : (
-              <Square className="w-4 h-4 text-slate-400" />
+              <Square className="w-4 h-4 text-slate-400 dark:text-slate-500" />
             )}
             <span>Select All</span>
           </button>
           {selectedKeys.length > 0 && (
-            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+            <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
               {selectedKeys.length} selected
             </span>
           )}
@@ -495,14 +495,14 @@ export const IssueList: React.FC<IssueListProps> = ({
           <button
             type="button"
             onClick={() => setIsFocusMode(!isFocusMode)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
               isFocusMode
                 ? 'bg-purple-600 text-white border-purple-700 shadow-xs ring-2 ring-purple-200'
-                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                : 'bg-slate-50 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-600'
             }`}
             title="Focus Mode: Hide tickets except those assigned to you or pinned"
           >
-            <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-amber-300 animate-spin-slow' : 'text-purple-600'}`} />
+            <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-amber-300 animate-spin-slow' : 'text-purple-600 dark:text-purple-400'}`} />
             <span>Focus Mode</span>
             {isFocusMode && (
               <span className="text-[9px] bg-purple-900 text-purple-200 px-1 py-0.2 rounded ml-0.5 font-mono">
@@ -516,12 +516,12 @@ export const IssueList: React.FC<IssueListProps> = ({
         <div className="flex items-center gap-2">
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">Sort:</span>
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="updated">Recently Updated</option>
               <option value="priority">Priority (High to Low)</option>
@@ -532,11 +532,11 @@ export const IssueList: React.FC<IssueListProps> = ({
 
           {/* Priority Filter Dropdown */}
           <div className="flex items-center gap-1">
-            <ListFilter className="w-3.5 h-3.5 text-slate-500" />
+            <ListFilter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="ALL">All Priorities ({issues.length})</option>
               <option value="Highest">Highest / Critical</option>
@@ -616,20 +616,20 @@ export const IssueList: React.FC<IssueListProps> = ({
       )}
 
       {/* Keyboard Navigation Hint Bar */}
-      <div className="flex items-center justify-between text-[10px] text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/80 mb-1">
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80 mb-1">
         <div className="flex items-center gap-1.5 font-medium">
-          <Keyboard className="w-3 h-3 text-blue-600" />
-          <span>Keyboard Nav: Use <kbd className="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono font-bold text-slate-700">↑</kbd> <kbd className="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono font-bold text-slate-700">↓</kbd> or <kbd className="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono font-bold text-slate-700">J</kbd>/<kbd className="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono font-bold text-slate-700">K</kbd> to move, <kbd className="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono font-bold text-slate-700">Enter</kbd> to open</span>
+          <Keyboard className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+          <span>Keyboard Nav: Use <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">↑</kbd> <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">↓</kbd> or <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">J</kbd>/<kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">K</kbd> to move, <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">Enter</kbd> to open</span>
         </div>
-        <span className="font-semibold text-slate-600">
+        <span className="font-semibold text-slate-600 dark:text-slate-300">
           {filteredIssues.length > 0 ? focusedIndex + 1 : 0} / {filteredIssues.length}
         </span>
       </div>
 
       {/* Ticket Cards List */}
-      <div className="divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         {filteredIssues.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500">
+          <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
             No tickets match priority filter &quot;{priorityFilter}&quot;.
           </div>
         ) : (
@@ -646,22 +646,22 @@ export const IssueList: React.FC<IssueListProps> = ({
                 }}
                 className={`p-3 transition-all cursor-pointer group flex items-start gap-2.5 relative ${
                   isFocused
-                    ? 'bg-blue-50/80 ring-2 ring-blue-500 ring-inset z-10'
+                    ? 'bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500 ring-inset z-10'
                     : issue.isPinned
-                    ? 'bg-amber-50/30 hover:bg-amber-50/60 border-l-3 border-l-amber-400'
-                    : 'hover:bg-slate-50/80'
+                    ? 'bg-amber-50/30 dark:bg-amber-950/30 hover:bg-amber-50/60 dark:hover:bg-amber-950/50 border-l-3 border-l-amber-400'
+                    : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                 }`}
               >
                 {/* Row Checkbox */}
                 <button
                   type="button"
                   onClick={(e) => handleToggleSelectKey(issue.key, e)}
-                  className="mt-0.5 text-slate-400 hover:text-blue-600 shrink-0"
+                  className="mt-0.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 shrink-0 cursor-pointer"
                 >
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-blue-600" />
+                    <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   ) : (
-                    <Square className="w-4 h-4 text-slate-300 hover:text-slate-500" />
+                    <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400" />
                   )}
                 </button>
 
@@ -669,7 +669,7 @@ export const IssueList: React.FC<IssueListProps> = ({
                   {/* Top Row: Key, Priority Badge, IssueType, Pin, Status */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-bold text-blue-700 group-hover:underline">
+                      <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 group-hover:underline">
                         {issue.key}
                       </span>
 
@@ -677,7 +677,7 @@ export const IssueList: React.FC<IssueListProps> = ({
                       {getPriorityBadge(issue.priority.name)}
 
                       {/* Issue Type */}
-                      <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.2 rounded">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded border border-slate-200/50 dark:border-slate-700/50">
                         {issue.issueType.name}
                       </span>
                     </div>
@@ -691,10 +691,10 @@ export const IssueList: React.FC<IssueListProps> = ({
                             e.stopPropagation();
                             onTogglePinTicket(issue.key);
                           }}
-                          className={`p-1 rounded-md transition-all ${
+                          className={`p-1 rounded-md transition-all cursor-pointer ${
                             issue.isPinned
-                              ? 'text-amber-600 bg-amber-100/80 hover:bg-amber-200 border border-amber-300'
-                              : 'text-slate-300 hover:text-amber-500 hover:bg-slate-100'
+                              ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 hover:bg-amber-200 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800'
+                              : 'text-slate-300 dark:text-slate-600 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                           }`}
                           title={issue.isPinned ? 'Unpin ticket' : 'Pin ticket to top'}
                         >
@@ -704,8 +704,8 @@ export const IssueList: React.FC<IssueListProps> = ({
 
                       {/* Offline Cached Tag Indicator */}
                       {issue.isCachedOffline && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80" title={`Cached offline ${formatRelativeTime(issue.cachedAt)}`}>
-                          <Database className="w-2.5 h-2.5 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80" title={`Cached offline ${formatRelativeTime(issue.cachedAt)}`}>
+                          <Database className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                           <span className="hidden sm:inline">Cached</span>
                         </span>
                       )}
@@ -713,49 +713,49 @@ export const IssueList: React.FC<IssueListProps> = ({
                       {/* Status Badge */}
                       {getStatusBadge(issue.status.name, issue.status.category)}
 
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all ml-0.5" />
                     </div>
                   </div>
 
                   {/* Summary Title */}
-                  <h4 className="text-xs font-semibold text-slate-800 group-hover:text-blue-900 leading-snug line-clamp-2">
+                  <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-900 dark:group-hover:text-blue-300 leading-snug line-clamp-2">
                     {issue.summary}
                   </h4>
 
                   {/* Bottom Meta Row: Assignee, Comments count, Components */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-50">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-50 dark:border-slate-800/80">
                     <div className="flex items-center gap-1.5 text-[11px]">
                       {issue.assignee.avatar ? (
                         <img 
                           src={issue.assignee.avatar} 
                           alt={issue.assignee.name} 
-                          className="w-4 h-4 rounded-full border border-slate-200"
+                          className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-700"
                         />
                       ) : (
-                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       )}
-                      <span className="text-slate-600 font-medium truncate max-w-[120px]">
+                      <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-[120px]">
                         {issue.assignee.name}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-400">
                       {getStatusDurationLabel(issue) && (
-                        <span className="flex items-center gap-1 bg-slate-100 text-slate-700 font-medium px-1.5 py-0.2 rounded border border-slate-200" title="Time spent in current status">
-                          <Clock className="w-2.5 h-2.5 text-blue-600" />
+                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700" title="Time spent in current status">
+                          <Clock className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
                           {getStatusDurationLabel(issue)}
                         </span>
                       )}
 
                       {issue.comments && issue.comments.length > 0 && (
-                        <span className="flex items-center gap-1 text-slate-500">
+                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                           <MessageSquare className="w-3 h-3" />
                           {issue.comments.length}
                         </span>
                       )}
 
                       {issue.components && issue.components.length > 0 && (
-                        <span className="hidden sm:inline bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded truncate max-w-[100px]">
+                        <span className="hidden sm:inline bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded truncate max-w-[100px] border border-slate-200/50 dark:border-slate-700/50">
                           {issue.components[0]}
                         </span>
                       )}

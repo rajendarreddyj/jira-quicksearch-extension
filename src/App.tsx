@@ -609,15 +609,15 @@ export default function App() {
         </main>
 
         {/* Footer Container Status */}
-        <footer className="p-2.5 bg-slate-900 text-slate-400 text-[10px] flex items-center justify-between border-t border-slate-800">
+        <footer className="p-2.5 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[10px] flex items-center justify-between border-t border-slate-200 dark:border-slate-800 transition-colors">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-medium text-slate-300">Jira Quick Search & Cache</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">Jira Quick Search &amp; Cache</span>
             <span>•</span>
             <button
               type="button"
               onClick={() => setShowReportIssueModal(true)}
-              className="text-rose-400 hover:text-rose-300 font-semibold hover:underline flex items-center gap-1 transition-colors"
+              className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold hover:underline flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>Report Issue</span>
             </button>

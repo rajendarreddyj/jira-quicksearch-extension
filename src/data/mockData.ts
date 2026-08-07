@@ -10,7 +10,8 @@ export const INITIAL_SETTINGS: ExtensionSettings = {
   enableAutoRefresh: true,
   viewMode: 'popup',
   isSimulatedOffline: false,
-  theme: 'light',
+  theme: 'dark',
+  showDevToolsInHeader: true,
   defaultSort: 'updated_desc',
 };
 

@@ -558,18 +558,18 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           
           {/* Summary Heading */}
-          <h2 className="text-base font-bold text-slate-900 leading-snug">
+          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
             {issue.summary}
           </h2>
 
           {/* QUICK ACTIONS SECTION */}
-          <div className="p-3.5 bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-200/80 rounded-xl space-y-3 shadow-2xs">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
                 <span>Quick Actions</span>
               </div>
-              <span className="text-[10px] font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded border border-blue-200">
+              <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
                 Fast Ticket Management
               </span>
             </div>
@@ -577,37 +577,37 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             {/* Status & Priority Quick Modifiers */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               {/* Quick Status */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-1.5 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Status
                 </span>
                 <div className="flex flex-wrap items-center gap-1">
                   <button
                     onClick={() => handleStatusChange('To Do', 'to-do')}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                       issue.status.category === 'to-do'
                         ? 'bg-slate-800 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
                     To Do
                   </button>
                   <button
                     onClick={() => handleStatusChange('In Progress', 'in-progress')}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                       issue.status.category === 'in-progress'
                         ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        : 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900'
                     }`}
                   >
                     In Progress
                   </button>
                   <button
                     onClick={() => handleStatusChange('Done', 'done')}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                       issue.status.category === 'done'
                         ? 'bg-emerald-600 text-white shadow-2xs'
-                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900'
                     }`}
                   >
                     Done
@@ -616,8 +616,8 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               </div>
 
               {/* Priority Selector */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-1.5 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Priority
                 </span>
                 <div className="flex flex-wrap items-center gap-1">
@@ -627,7 +627,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                       <button
                         key={pName}
                         onClick={() => onUpdateIssuePriority && onUpdateIssuePriority(issue.key, pName as PriorityName)}
-                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-0.5 ${
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-0.5 cursor-pointer ${
                           isCurrent
                             ? pName === 'Highest'
                               ? 'bg-rose-600 text-white shadow-2xs'
@@ -636,7 +636,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                               : pName === 'Medium'
                               ? 'bg-amber-600 text-white shadow-2xs'
                               : 'bg-blue-600 text-white shadow-2xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
                         {pName === 'Highest' && <AlertTriangle className="w-2.5 h-2.5" />}
@@ -656,10 +656,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               {onTogglePinTicket && (
                 <button
                   onClick={() => onTogglePinTicket(issue.key)}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs border ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs border cursor-pointer ${
                     issue.isPinned
                       ? 'bg-amber-400 hover:bg-amber-500 text-slate-900 border-amber-500'
-                      : 'bg-white hover:bg-amber-50 text-slate-800 border-slate-300 hover:border-amber-300'
+                      : 'bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
                   }`}
                 >
                   <Pin className={`w-3.5 h-3.5 ${issue.isPinned ? 'fill-slate-900' : 'text-amber-500'}`} />
@@ -670,10 +670,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="py-1.5 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 title="Copy direct URL to Jira ticket"
               >
-                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                 <span>{copiedLink ? 'Copied Link!' : 'Copy Link'}</span>
               </button>
 
@@ -681,31 +681,31 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 href={`${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-1.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                className="py-1.5 px-3 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
                 title="Open direct ticket in browser"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                <ExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>Open in Jira</span>
               </a>
             </div>
           </div>
 
           {/* TIME TRACKING & ESTIMATES SECTION */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                <Timer className="w-3.5 h-3.5 text-blue-600" />
-                <span>Time Tracking & Estimates</span>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                <Timer className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Time Tracking &amp; Estimates</span>
               </div>
-              <span className="text-[10px] font-semibold text-slate-500">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                 Worklog Stats
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
                 <span className="text-[10px] font-medium text-slate-400 block">Original Estimate</span>
-                <div className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1 mt-0.5">
                   <Timer className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                   <span>
                     {issue.timeTracking?.originalEstimateText ||
@@ -716,10 +716,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
                 <span className="text-[10px] font-medium text-slate-400 block">Time Spent</span>
                 <div className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>
                     {issue.timeTracking?.timeSpentText ||
                       (issue.timeTracking?.timeSpentSeconds
@@ -729,7 +729,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
                 <span className="text-[10px] font-medium text-slate-400 block">Remaining</span>
                 <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1 mt-0.5">
                   <Hourglass className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -745,19 +745,19 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           </div>
 
           {/* TIME SPENT IN EACH STATUS ANALYTICS SECTION */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                <Clock className="w-3.5 h-3.5 text-blue-600" />
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>Time Spent in Each Status</span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-700 px-2 py-0.5 rounded-md">
                 Total: {formatHours(totalStatusHours)}
               </span>
             </div>
 
             {/* Stacked Progress Bar */}
-            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+            <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
               {statusTimeData.map((st, idx) => {
                 const pct = totalStatusHours > 0 ? (st.hours / totalStatusHours) * 100 : 0;
                 return (
@@ -776,14 +776,14 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               {statusTimeData.map((st, idx) => {
                 const pct = totalStatusHours > 0 ? Math.round((st.hours / totalStatusHours) * 100) : 0;
                 return (
-                  <div key={st.statusName + idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                  <div key={st.statusName + idx} className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusBgColor(st.category, idx)}`} />
-                      <span className="font-medium text-slate-700 truncate text-[11px]">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate text-[11px]">
                         {st.statusName}
                       </span>
                     </div>
-                    <div className="text-[11px] font-bold text-slate-900 shrink-0">
+                    <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 shrink-0">
                       {formatHours(st.hours)} <span className="text-[10px] text-slate-400 font-normal">({pct}%)</span>
                     </div>
                   </div>
@@ -837,31 +837,31 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           </div>
 
           {/* Attributes Grid */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Assignee</span>
+                <span className="text-slate-400 dark:text-slate-400 text-[11px] font-medium">Assignee</span>
                 {onUpdateIssueAssignee && (
                   <button
                     type="button"
                     onClick={handleAssignToMe}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-300 hover:text-blue-700 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer"
                     title="Assign this ticket to my email account"
                   >
-                    <UserCheck className="w-3 h-3 text-blue-600" />
+                    <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                     <span>Assign to Me</span>
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800">
+              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 {issue.assignee.avatar ? (
-                  <img src={issue.assignee.avatar} className="w-4 h-4 rounded-full border border-slate-200" alt="" />
+                  <img src={issue.assignee.avatar} className="w-4 h-4 rounded-full border border-slate-200 dark:border-slate-700" alt="" />
                 ) : (
                   <User className="w-3.5 h-3.5 text-slate-400" />
                 )}
                 <span>{issue.assignee.name}</span>
                 {currentUserEmail && issue.assignee.email?.toLowerCase() === currentUserEmail.toLowerCase() && (
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200">
+                  <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
                     You
                   </span>
                 )}
@@ -870,7 +870,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
             <div>
               <span className="text-slate-400 text-[11px] block font-medium">Reporter</span>
-              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800">
+              <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 <span>{issue.reporter.name}</span>
               </div>
@@ -878,14 +878,14 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
             <div>
               <span className="text-slate-400 text-[11px] block font-medium">Priority</span>
-              <span className="font-semibold text-slate-800 block mt-1">
+              <span className="font-semibold text-slate-800 dark:text-slate-100 block mt-1">
                 {issue.priority.name}
               </span>
             </div>
 
             <div>
               <span className="text-slate-400 text-[11px] block font-medium">Fix Version</span>
-              <span className="font-semibold text-slate-800 block mt-1">
+              <span className="font-semibold text-slate-800 dark:text-slate-100 block mt-1">
                 {issue.fixVersion || 'Unassigned'}
               </span>
             </div>
@@ -893,7 +893,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             {issue.storyPoints !== undefined && (
               <div>
                 <span className="text-slate-400 text-[11px] block font-medium">Story Points</span>
-                <span className="font-semibold text-slate-800 block mt-1">
+                <span className="font-semibold text-slate-800 dark:text-slate-100 block mt-1">
                   {issue.storyPoints} pts
                 </span>
               </div>
@@ -901,7 +901,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
             <div>
               <span className="text-slate-400 text-[11px] block font-medium">Updated</span>
-              <span className="text-slate-700 block mt-1">
+              <span className="text-slate-700 dark:text-slate-300 block mt-1">
                 {formatTime(issue.updated)}
               </span>
             </div>
@@ -916,7 +916,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                     <Layers className="w-3 h-3" /> Components:
                   </span>
                   {issue.components.map(comp => (
-                    <span key={comp} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium text-[11px]">
+                    <span key={comp} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded font-medium text-[11px]">
                       {comp}
                     </span>
                   ))}
@@ -926,7 +926,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               {issue.labels.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap text-xs">
                   <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
-                    <Tag className="w-3 h-3 text-blue-600" /> Labels:
+                    <Tag className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Labels:
                   </span>
                   {issue.labels.map(lbl => (
                     <button
@@ -946,19 +946,19 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           )}
 
           {/* SUBTASKS SECTION */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                <CheckSquare className="w-4 h-4 text-emerald-600" />
-                <span>Subtasks & Technical Steps ({subtasks.length})</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Subtasks &amp; Technical Steps ({subtasks.length})</span>
               </div>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                 {subtasks.filter(st => st.status.category === 'done').length} / {subtasks.length} Done
               </span>
             </div>
 
             {/* Subtasks Progress Bar */}
-            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-emerald-500 h-full transition-all duration-300"
                 style={{
@@ -982,18 +982,18 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                     key={st.key}
                     className={`p-2.5 rounded-lg border text-xs transition-all space-y-1.5 ${
                       isDone
-                        ? 'bg-emerald-50/50 border-emerald-200/80'
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60'
                         : isInProgress
-                        ? 'bg-blue-50/50 border-blue-200/80'
-                        : 'bg-white border-slate-200'
+                        ? 'bg-blue-50/50 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/60'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono font-bold text-[11px] text-blue-700 shrink-0">
+                        <span className="font-mono font-bold text-[11px] text-blue-700 dark:text-blue-400 shrink-0">
                           {st.key}
                         </span>
-                        <span className={`font-semibold text-slate-800 truncate ${isDone ? 'line-through text-slate-500' : ''}`}>
+                        <span className={`font-semibold text-slate-800 dark:text-slate-100 truncate ${isDone ? 'line-through text-slate-500 dark:text-slate-400' : ''}`}>
                           {st.summary}
                         </span>
                       </div>
@@ -1002,10 +1002,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                       <span
                         className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
                           isDone
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
                             : isInProgress
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-slate-200 text-slate-700'
+                            ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         {st.status.name}
@@ -1013,7 +1013,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                     </div>
 
                     {/* Quick Transition Action Buttons */}
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100/80">
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100/80 dark:border-slate-800">
                       <span className="text-[10px] text-slate-400">
                         Assignee: {st.assignee?.name || issue.assignee.name}
                       </span>
@@ -1022,10 +1022,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSubtaskStatusChange(st.key, 'To Do', 'to-do')}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
                             st.status.category === 'to-do'
                               ? 'bg-slate-700 text-white font-bold'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                           }`}
                         >
                           To Do
@@ -1034,10 +1034,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSubtaskStatusChange(st.key, 'In Progress', 'in-progress')}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
                             st.status.category === 'in-progress'
                               ? 'bg-blue-600 text-white font-bold'
-                              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                              : 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900'
                           }`}
                         >
                           In Progress
@@ -1046,10 +1046,10 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSubtaskStatusChange(st.key, 'Done', 'done')}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
                             st.status.category === 'done'
                               ? 'bg-emerald-600 text-white font-bold'
-                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                              : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900'
                           }`}
                         >
                           Done
@@ -1163,7 +1163,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
                 placeholder="Add an offline draft comment..."
-                className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900"
               />
               <button
                 type="submit"

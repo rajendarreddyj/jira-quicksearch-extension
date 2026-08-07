@@ -187,14 +187,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="p-3.5 space-y-5 max-w-xl mx-auto">
       {/* Header Title */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
             <Settings className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Extension Settings</h3>
-            <p className="text-[11px] text-slate-500">Configure Jira instance, cache thresholds, and local storage</p>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Extension Settings</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Configure Jira instance, cache thresholds, and local storage</p>
           </div>
         </div>
 
@@ -210,10 +210,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         
         {/* Jira Connection Config Box */}
-        <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
+        <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
             <span className="flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               Jira Server Credentials
             </span>
             <span className="text-[10px] text-slate-400 font-normal">Atlassian REST API v2/v3</span>
@@ -221,7 +221,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Jira URL */}
           <div className="space-y-1">
-            <label className="text-[11px] font-semibold text-slate-700 block">
+            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
               Jira Instance Base URL
             </label>
             <input
@@ -229,13 +229,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={formData.jiraUrl}
               onChange={(e) => handleChange('jiraUrl', e.target.value)}
               placeholder="https://company.atlassian.net"
-              className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900"
             />
           </div>
 
           {/* Project Key(s) */}
           <div className="space-y-1">
-            <label className="text-[11px] font-semibold text-slate-700 block flex items-center justify-between">
+            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block flex items-center justify-between">
               <span>Project Key(s)</span>
               <span className="text-[10px] text-slate-400 font-normal">Comma-separated (e.g. PROJ, DEV, CORE)</span>
             </label>
@@ -244,14 +244,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={formData.projectKey}
               onChange={(e) => handleChange('projectKey', e.target.value)}
               placeholder="PROJ, DEV, CORE"
-              className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900"
             />
           </div>
 
           {/* User Email & API Token */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-700 block">
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
                 Atlassian User Email
               </label>
               <input
@@ -259,18 +259,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 value={formData.userEmail}
                 onChange={(e) => handleChange('userEmail', e.target.value)}
                 placeholder="dev@company.com"
-                className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-700 block flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block flex items-center justify-between">
                 <span>API Token / PAT</span>
                 <a
                   href="https://id.atlassian.com/manage-profile/security/api-tokens"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[10px] text-blue-600 hover:underline"
+                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   Get Token
                 </a>
@@ -281,12 +281,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.apiToken}
                   onChange={(e) => handleChange('apiToken', e.target.value)}
                   placeholder="Atlassian API token..."
-                  className="w-full pl-3 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full pl-3 pr-8 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900"
                 />
                 <button
                   type="button"
                   onClick={() => setShowToken(!showToken)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                 >
                   {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
@@ -300,19 +300,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               type="button"
               onClick={handleTestConnection}
               disabled={testStatus.loading}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-slate-200"
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-slate-200 dark:border-slate-600 cursor-pointer"
             >
               {testStatus.loading ? (
-                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-800 dark:border-t-slate-100 rounded-full animate-spin" />
               ) : (
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               )}
               <span>Test Connection</span>
             </button>
 
             {testStatus.message && (
               <span className={`text-[11px] font-semibold ${
-                testStatus.success ? 'text-emerald-600' : 'text-rose-600'
+                testStatus.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}>
                 {testStatus.message}
               </span>
@@ -321,29 +321,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Appearance & Theme Settings Card */}
-        <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
+        <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
             <span className="flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-purple-600" />
-              Appearance & Dark Mode Theme
+              <Palette className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              Appearance &amp; Dark Mode Theme
             </span>
             <span className="text-[10px] text-slate-400 font-normal">Tailwind Theme Engine</span>
           </div>
 
           <div className="flex items-center justify-between pt-1">
             <div>
-              <span className="text-xs font-semibold text-slate-800 block">Extension Theme</span>
-              <span className="text-[10px] text-slate-500 block">Switch interface theme between Light and Dark mode</span>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Extension Theme</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Switch interface theme between Light and Dark mode</span>
             </div>
 
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => handleChange('theme', 'light')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                   formData.theme === 'light'
                     ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
@@ -353,10 +353,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleChange('theme', 'dark')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                   formData.theme === 'dark'
                     ? 'bg-slate-900 text-amber-300 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
@@ -367,19 +367,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Cache & Performance Options */}
-        <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
+        <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
             <span className="flex items-center gap-1.5">
-              <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+              <HardDrive className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               Offline Cache Thresholds
             </span>
           </div>
 
           {/* Max Cached Tickets Limit Slider */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
               <span>Max Cached Tickets Limit</span>
-              <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-mono">
+              <span className="font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 font-mono">
                 {formData.maxCachedTickets} tickets
               </span>
             </div>
@@ -421,6 +421,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               type="checkbox"
               checked={formData.enableAutoRefresh ?? true}
               onChange={(e) => handleChange('enableAutoRefresh', e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
+            />
+          </div>
+
+          {/* Show Release & Dev Tools in Header Toggle */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <div>
+              <span className="text-xs font-bold text-blue-900 dark:text-blue-200 block">Show Developer / Release Tools in Header</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Toggle visibility of &quot;CI/CD &amp; Arch&quot; and &quot;Export Ext&quot; buttons in top bar for clean user releases</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formData.showDevToolsInHeader ?? true}
+              onChange={(e) => handleChange('showDevToolsInHeader', e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
             />
           </div>
@@ -563,10 +577,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       </form>
 
       {/* Clear Local Data Options Section */}
-      <div className="p-3.5 bg-rose-50/50 border border-rose-200 rounded-xl space-y-3">
-        <div className="font-bold text-xs text-rose-800 flex items-center gap-1.5 border-b border-rose-200/80 pb-2">
-          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-          Clear Local Data & Cache Options
+      <div className="p-3.5 bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl space-y-3">
+        <div className="font-bold text-xs text-rose-800 dark:text-rose-300 flex items-center gap-1.5 border-b border-rose-200/80 dark:border-rose-900/40 pb-2">
+          <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+          Clear Local Data &amp; Cache Options
         </div>
 
         <div className="space-y-2 text-xs">
@@ -592,7 +606,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="flex items-center justify-between p-2 bg-blue-50/70 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800">
             <div>
               <span className="font-bold text-blue-900 dark:text-blue-200 block">Cleanup Mock Data (Extension Release)</span>
-              <span className="text-[10px] text-blue-700 dark:text-blue-300 block">Purges all initial seed demo tickets & history for a clean release</span>
+              <span className="text-[10px] text-blue-700 dark:text-blue-300 block">Purges all initial seed demo tickets &amp; history for a clean release</span>
             </div>
             <button
               type="button"
@@ -607,40 +621,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
 
           {/* Option 1: Clear Cached Tickets */}
-          <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-rose-100">
+          <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-lg border border-rose-100 dark:border-slate-700">
             <div>
-              <span className="font-semibold text-slate-800 block">Purge Cached Tickets</span>
-              <span className="text-[10px] text-slate-500 block">Clears all offline stored ticket details</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200 block">Purge Cached Tickets</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Clears all offline stored ticket details</span>
             </div>
             <button
               type="button"
               onClick={onClearCache}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-rose-100 text-rose-700 rounded text-[11px] font-semibold transition-colors border border-rose-200"
+              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded text-[11px] font-semibold transition-colors border border-rose-200 dark:border-rose-800 cursor-pointer"
             >
               Clear Cache
             </button>
           </div>
 
           {/* Option 2: Clear Search History */}
-          <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-rose-100">
+          <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-lg border border-rose-100 dark:border-slate-700">
             <div>
-              <span className="font-semibold text-slate-800 block">Clear Search Query History</span>
-              <span className="text-[10px] text-slate-500 block">Deletes all saved and pinned search queries</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200 block">Clear Search Query History</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Deletes all saved and pinned search queries</span>
             </div>
             <button
               type="button"
               onClick={onClearHistory}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-rose-100 text-rose-700 rounded text-[11px] font-semibold transition-colors border border-rose-200"
+              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded text-[11px] font-semibold transition-colors border border-rose-200 dark:border-rose-800 cursor-pointer"
             >
               Clear History
             </button>
           </div>
 
           {/* Option 3: Reset Everything */}
-          <div className="flex items-center justify-between p-2 bg-rose-100/60 rounded-lg border border-rose-200">
+          <div className="flex items-center justify-between p-2 bg-rose-100/60 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-900/80">
             <div>
-              <span className="font-bold text-rose-900 block">Reset All Local Storage</span>
-              <span className="text-[10px] text-rose-700 block">Resets all settings, history, and ticket cache to default state</span>
+              <span className="font-bold text-rose-900 dark:text-rose-200 block">Reset All Local Storage</span>
+              <span className="text-[10px] text-rose-700 dark:text-rose-300 block">Resets all settings, history, and ticket cache to default state</span>
             </div>
 
             {confirmClearAll ? (

@@ -121,7 +121,7 @@ jobs:
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
@@ -131,7 +131,7 @@ jobs:
             </div>
             <div>
               <h3 className="text-sm font-bold flex items-center gap-2">
-                <span>GitHub Repository & Chrome Web Store CI/CD</span>
+                <span>GitHub Repository &amp; Chrome Web Store CI/CD</span>
                 <span className="text-[10px] font-mono bg-blue-900 text-blue-200 px-2 py-0.5 rounded border border-blue-700">
                   v2.4.0
                 </span>
@@ -144,7 +144,7 @@ jobs:
 
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -163,13 +163,13 @@ jobs:
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 bg-slate-50 px-4 pt-2 gap-2 text-xs font-semibold">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-4 pt-2 gap-2 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('architecture')}
-            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'architecture'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-blue-600 text-blue-700 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
@@ -178,10 +178,10 @@ jobs:
 
           <button
             onClick={() => setActiveTab('github_actions')}
-            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'github_actions'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-blue-600 text-blue-700 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Workflow className="w-3.5 h-3.5" />
@@ -190,10 +190,10 @@ jobs:
 
           <button
             onClick={() => setActiveTab('instructions')}
-            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'instructions'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-blue-600 text-blue-700 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
@@ -252,23 +252,23 @@ jobs:
 
               {/* Architecture Summary Features */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
-                  <span className="font-bold text-blue-900 block">Manifest V3 Ready</span>
-                  <p className="text-[11px] text-blue-700">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl space-y-1">
+                  <span className="font-bold text-blue-900 dark:text-blue-200 block">Manifest V3 Ready</span>
+                  <p className="text-[11px] text-blue-700 dark:text-blue-300">
                     Compliant with modern Chrome extension guidelines using service workers and secure host permissions.
                   </p>
                 </div>
 
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                  <span className="font-bold text-emerald-900 block">Offline Cache First</span>
-                  <p className="text-[11px] text-emerald-700">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-1">
+                  <span className="font-bold text-emerald-900 dark:text-emerald-200 block">Offline Cache First</span>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
                     Saves tickets locally so developers can view ticket status, assignee, and comments offline.
                   </p>
                 </div>
 
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                  <span className="font-bold text-purple-900 block">Automated Release</span>
-                  <p className="text-[11px] text-purple-700">
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl space-y-1">
+                  <span className="font-bold text-purple-900 dark:text-purple-200 block">Automated Release</span>
+                  <p className="text-[11px] text-purple-700 dark:text-purple-300">
                     GitHub Actions automatically builds, zips, creates GitHub releases, and publishes directly to Web Store.
                   </p>
                 </div>
@@ -281,13 +281,13 @@ jobs:
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-slate-800 block">Workflow File Path:</span>
-                  <code className="text-[11px] font-mono text-blue-700 font-bold">.github/workflows/chrome-extension-release.yml</code>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Workflow File Path:</span>
+                  <code className="text-[11px] font-mono text-blue-700 dark:text-blue-400 font-bold">.github/workflows/chrome-extension-release.yml</code>
                 </div>
 
                 <button
                   onClick={copyYaml}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -312,13 +312,13 @@ jobs:
           {/* TAB 3: SETUP INSTRUCTIONS */}
           {activeTab === 'instructions' && (
             <div className="space-y-3">
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
-                  <Tag className="w-4 h-4 text-blue-600" />
-                  <span>1. Automatic Versioning & Release Creation</span>
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+                  <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>1. Automatic Versioning &amp; Release Creation</span>
                 </h4>
-                <p className="text-slate-600 text-[11px]">
-                  When you push a git tag formatted like <code className="bg-slate-200 px-1 py-0.2 rounded font-mono font-bold text-slate-800">v1.0.0</code>, GitHub Actions automatically triggers a production release build.
+                <p className="text-slate-600 dark:text-slate-300 text-[11px]">
+                  When you push a git tag formatted like <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.2 rounded font-mono font-bold text-slate-800 dark:text-slate-100">v1.0.0</code>, GitHub Actions automatically triggers a production release build.
                 </p>
                 <div className="bg-slate-900 text-emerald-400 p-2 rounded font-mono text-[11px]">
                   git tag -a v1.0.0 -m &quot;Release v1.0.0&quot;<br />
@@ -326,35 +326,35 @@ jobs:
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>2. Chrome Web Store API Secret Keys Setup</span>
                 </h4>
-                <p className="text-slate-600 text-[11px]">
+                <p className="text-slate-600 dark:text-slate-300 text-[11px]">
                   In your GitHub Repository Settings under <strong>Secrets and variables → Actions</strong>, add the following secrets:
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-700 font-mono">
-                  <li><strong className="text-slate-900">CHROME_EXTENSION_ID:</strong> Your extension ID from Chrome Developer Dashboard</li>
-                  <li><strong className="text-slate-900">CHROME_CLIENT_ID:</strong> Google Cloud OAuth2 Client ID</li>
-                  <li><strong className="text-slate-900">CHROME_CLIENT_SECRET:</strong> Google Cloud OAuth2 Client Secret</li>
-                  <li><strong className="text-slate-900">CHROME_REFRESH_TOKEN:</strong> OAuth2 Refresh Token for Chrome Web Store API</li>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-700 dark:text-slate-300 font-mono">
+                  <li><strong className="text-slate-900 dark:text-slate-100">CHROME_EXTENSION_ID:</strong> Your extension ID from Chrome Developer Dashboard</li>
+                  <li><strong className="text-slate-900 dark:text-slate-100">CHROME_CLIENT_ID:</strong> Google Cloud OAuth2 Client ID</li>
+                  <li><strong className="text-slate-900 dark:text-slate-100">CHROME_CLIENT_SECRET:</strong> Google Cloud OAuth2 Client Secret</li>
+                  <li><strong className="text-slate-900 dark:text-slate-100">CHROME_REFRESH_TOKEN:</strong> OAuth2 Refresh Token for Chrome Web Store API</li>
                 </ul>
               </div>
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
-                  <Store className="w-4 h-4 text-purple-600" />
-                  <span>3. Manual Local Build & Testing</span>
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+                  <Store className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>3. Manual Local Build &amp; Testing</span>
                 </h4>
-                <p className="text-slate-600 text-[11px]">
+                <p className="text-slate-600 dark:text-slate-300 text-[11px]">
                   To test the extension locally in Chrome:
                 </p>
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-700">
-                  <li>Run <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-slate-800 font-bold">npm run build</code> locally.</li>
-                  <li>Open Chrome and navigate to <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-slate-800 font-bold">chrome://extensions</code>.</li>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-700 dark:text-slate-300">
+                  <li>Run <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.2 rounded font-mono text-slate-800 dark:text-slate-100 font-bold">npm run build</code> locally.</li>
+                  <li>Open Chrome and navigate to <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.2 rounded font-mono text-slate-800 dark:text-slate-100 font-bold">chrome://extensions</code>.</li>
                   <li>Enable <strong>Developer Mode</strong> in the top right toggle.</li>
-                  <li>Click <strong>Load unpacked</strong> and select the generated <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-slate-800 font-bold">dist/</code> directory.</li>
+                  <li>Click <strong>Load unpacked</strong> and select the generated <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.2 rounded font-mono text-slate-800 dark:text-slate-100 font-bold">dist/</code> directory.</li>
                 </ol>
               </div>
             </div>
@@ -362,14 +362,14 @@ jobs:
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
-          <span className="text-[10px] text-slate-500">
+        <div className="p-3 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">
             Automated CI/CD Pipeline for Chrome Extensions
           </span>
 
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg text-xs transition-colors"
+            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium rounded-lg text-xs transition-colors cursor-pointer"
           >
             Close
           </button>
