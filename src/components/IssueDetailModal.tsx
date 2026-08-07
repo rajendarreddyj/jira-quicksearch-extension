@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Markdown from 'react-markdown';
 import { JiraIssue, StatusCategory, PriorityName, JiraSubtask } from '../types';
 import { 
   X, 
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Pin,
+  Eye,
   Zap,
   ArrowUp,
   ArrowDown,
@@ -34,6 +36,7 @@ interface IssueDetailModalProps {
   onUpdateIssuePriority?: (key: string, newPriorityName: PriorityName) => void;
   onAddComment?: (key: string, commentText: string) => void;
   onTogglePinTicket?: (key: string) => void;
+  onToggleWatchTicket?: (key: string) => void;
   jiraUrl: string;
 }
 
@@ -44,6 +47,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   onUpdateIssuePriority,
   onAddComment,
   onTogglePinTicket,
+  onToggleWatchTicket,
   jiraUrl,
 }) => {
   const [newCommentText, setNewCommentText] = useState('');
@@ -310,7 +314,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-in slide-in-from-right duration-300">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 dark:text-slate-100 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-right duration-300">
         
         {/* Drawer Header */}
         <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
@@ -330,6 +334,21 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {onToggleWatchTicket && (
+              <button
+                onClick={() => onToggleWatchTicket(issue.key)}
+                title={issue.isWatched ? 'Stop watching ticket' : 'Watch ticket for live updates'}
+                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-semibold ${
+                  issue.isWatched
+                    ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-2xs'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{issue.isWatched ? 'Watching' : 'Watch'}</span>
+              </button>
+            )}
+
             {onTogglePinTicket && (
               <button
                 onClick={() => onTogglePinTicket(issue.key)}
@@ -355,12 +374,14 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               <span className="hidden sm:inline">Print</span>
             </button>
 
+            {/* Copy Direct Jira Link Button */}
             <button
               onClick={handleCopyLink}
-              title="Copy link to Jira ticket"
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+              title="Copy direct URL of Jira ticket to clipboard"
+              className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-all text-xs font-bold flex items-center gap-1 shadow-2xs"
             >
-              {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedLink ? 'Link Copied!' : 'Copy Jira Link'}</span>
             </button>
 
             <a
@@ -755,33 +776,36 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           </div>
 
           {/* Description Section */}
-          <div className="space-y-1.5 pt-2 border-t border-slate-200">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Description
+          <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+              <span>Description</span>
+              <span className="text-[10px] font-mono text-slate-400 font-normal lowercase">markdown supported</span>
             </h3>
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 space-y-2 whitespace-pre-wrap leading-relaxed font-sans">
-              {issue.description}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans prose dark:prose-invert max-w-none">
+              <Markdown>{issue.description || '_No description provided._'}</Markdown>
             </div>
           </div>
 
           {/* Comments Thread Section */}
-          <div className="space-y-3 pt-2 border-t border-slate-200">
+          <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-                Comments ({issue.comments.length})
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Comments ({issue.comments.length})</span>
               </h3>
             </div>
 
             {/* Existing Comments */}
             <div className="space-y-2">
               {issue.comments.map((comment) => (
-                <div key={comment.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1 text-xs">
-                  <div className="flex items-center justify-between font-semibold text-slate-800 text-[11px]">
-                    <span className="text-blue-700">{comment.author}</span>
+                <div key={comment.id} className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg space-y-1 text-xs">
+                  <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
+                    <span className="text-blue-700 dark:text-blue-400 font-bold">{comment.author}</span>
                     <span className="text-slate-400 font-normal">{formatTime(comment.created)}</span>
                   </div>
-                  <p className="text-slate-700 leading-normal">{comment.body}</p>
+                  <div className="text-slate-700 dark:text-slate-300 leading-normal prose dark:prose-invert max-w-none pt-1">
+                    <Markdown>{comment.body}</Markdown>
+                  </div>
                 </div>
               ))}
             </div>

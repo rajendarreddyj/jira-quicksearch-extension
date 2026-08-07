@@ -34,6 +34,8 @@ interface IssueListProps {
   onTogglePinTicket?: (key: string) => void;
   onBulkPin?: (keys: string[]) => void;
   onBulkRemoveFromCache?: (keys: string[]) => void;
+  onBulkUpdateStatus?: (keys: string[], newStatusName: string, category: 'to-do' | 'in-progress' | 'done') => void;
+  recentlyViewed?: JiraIssue[];
   isOfflineResult: boolean;
   searchQuery: string;
 }
@@ -44,6 +46,8 @@ export const IssueList: React.FC<IssueListProps> = ({
   onTogglePinTicket,
   onBulkPin,
   onBulkRemoveFromCache,
+  onBulkUpdateStatus,
+  recentlyViewed,
   isOfflineResult,
   searchQuery,
 }) => {
@@ -293,8 +297,45 @@ export const IssueList: React.FC<IssueListProps> = ({
     return `${timeStr} in ${issue.status.name}`;
   };
 
+  const handleBulkStatusChange = (newStatusName: string, category: 'to-do' | 'in-progress' | 'done') => {
+    if (onBulkUpdateStatus && selectedKeys.length > 0) {
+      onBulkUpdateStatus(selectedKeys, newStatusName, category);
+      setSelectedKeys([]);
+    }
+  };
+
   return (
     <div className="space-y-2 p-3">
+      {/* Recently Viewed Section (Last 5 Opened Tickets) */}
+      {recentlyViewed && recentlyViewed.length > 0 && (
+        <div className="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-1.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Recently Viewed (Last 5 Tickets)</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">Quick Re-access</span>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+            {recentlyViewed.slice(0, 5).map((rv) => (
+              <button
+                key={rv.key}
+                onClick={() => onSelectIssue(rv)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 shrink-0 shadow-2xs hover:shadow-xs transition-all group"
+                title={`Open details for ${rv.key}: ${rv.summary}`}
+              >
+                <span className="font-mono text-blue-600 dark:text-blue-400 font-bold text-[11px] group-hover:underline">
+                  {rv.key}
+                </span>
+                <span className="truncate max-w-[130px] text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  {rv.summary}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Offline result header notification banner if offline */}
       {isOfflineResult && (
         <div className="flex items-center justify-between text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 mb-2">
@@ -389,13 +430,41 @@ export const IssueList: React.FC<IssueListProps> = ({
 
       {/* Bulk Actions Floating Bar when items selected */}
       {selectedKeys.length > 0 && (
-        <div className="flex items-center justify-between bg-blue-900 text-white p-2.5 rounded-xl border border-blue-800 shadow-md text-xs animate-in fade-in">
-          <span className="font-semibold text-blue-100 flex items-center gap-1.5">
-            <CheckSquare className="w-4 h-4 text-blue-300" />
-            <span>{selectedKeys.length} ticket(s) selected</span>
+        <div className="flex flex-wrap items-center justify-between bg-slate-900 text-white p-2.5 rounded-xl border border-slate-800 shadow-md text-xs animate-in fade-in gap-2">
+          <span className="font-semibold text-blue-200 flex items-center gap-1.5 shrink-0">
+            <CheckSquare className="w-4 h-4 text-blue-400" />
+            <span>{selectedKeys.length} selected</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* Bulk Status Transition Buttons */}
+            {onBulkUpdateStatus && (
+              <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <span className="text-[10px] text-slate-400 font-bold px-1 uppercase hidden sm:inline">Set Status:</span>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatusChange('To Do', 'to-do')}
+                  className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-bold transition-colors"
+                >
+                  To Do
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatusChange('In Progress', 'in-progress')}
+                  className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-bold transition-colors"
+                >
+                  In Progress
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatusChange('Done', 'done')}
+                  className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
             {onBulkPin && (
               <button
                 onClick={handleBulkPinAction}
@@ -418,7 +487,7 @@ export const IssueList: React.FC<IssueListProps> = ({
 
             <button
               onClick={() => setSelectedKeys([])}
-              className="px-2 py-1 bg-blue-800 hover:bg-blue-700 text-blue-200 rounded-lg text-[11px] font-medium"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] font-medium"
             >
               Clear
             </button>

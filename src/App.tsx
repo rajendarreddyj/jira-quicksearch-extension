@@ -25,7 +25,11 @@ import {
   getCacheStats, 
   executeJiraSearch,
   togglePinTicketKey,
-  getPinnedTicketKeys
+  getPinnedTicketKeys,
+  getRecentlyViewedTickets,
+  addRecentlyViewedTicket,
+  getWatchedTicketKeys,
+  toggleWatchTicketKey
 } from './services/jiraService';
 import { Header } from './components/Header';
 import { SearchPanel } from './components/SearchPanel';
@@ -46,6 +50,8 @@ export default function App() {
   const [history, setHistory] = useState<SearchHistoryItem[]>(loadSearchHistory);
   const [cachedIssues, setCachedIssues] = useState<JiraIssue[]>(getCachedIssues);
   const [cacheStats, setCacheStats] = useState<CacheStats>(() => getCacheStats(settings.maxCachedTickets));
+  const [recentlyViewed, setRecentlyViewed] = useState<JiraIssue[]>(getRecentlyViewedTickets);
+  const [watchedTicketKeys, setWatchedTicketKeys] = useState<string[]>(getWatchedTicketKeys);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,25 +67,36 @@ export default function App() {
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
-  // Live Pinned Ticket Notifications State
+  // Live Pinned & Watched Ticket Notifications State
   const [notifications, setNotifications] = useState<PinnedNotification[]>([]);
   const [isCheckingPinned, setIsCheckingPinned] = useState(false);
 
-  // Check for updates on pinned tickets
+  // Sync Dark Mode theme class to document element
+  useEffect(() => {
+    if (settings.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.theme]);
+
+  // Check for updates on pinned and watched tickets
   const checkForPinnedUpdates = useCallback(() => {
     setIsCheckingPinned(true);
     setTimeout(() => {
       const allKnown = getCachedIssues();
-      const pinned = allKnown.filter(i => i.isPinned);
+      const pinnedOrWatched = allKnown.filter(i => i.isPinned || watchedTicketKeys.includes(i.key.toUpperCase()));
       
-      if (pinned.length > 0) {
-        // Pick one or two pinned tickets to demonstrate alert update
-        const sample = pinned[Math.floor(Math.random() * pinned.length)];
+      if (pinnedOrWatched.length > 0) {
+        const sample = pinnedOrWatched[Math.floor(Math.random() * pinnedOrWatched.length)];
+        const isWatchedAlert = watchedTicketKeys.includes(sample.key.toUpperCase());
         const newAlert: PinnedNotification = {
           id: 'notif_' + Date.now(),
           ticketKey: sample.key,
           summary: sample.summary,
-          message: `Status updated or comment added on bookmarked ticket`,
+          message: isWatchedAlert 
+            ? `Watched ticket activity: Status updated or new comment added`
+            : `Pinned ticket update: Status updated or comment added`,
           timestamp: new Date().toISOString(),
           read: false,
         };
@@ -87,7 +104,7 @@ export default function App() {
       }
       setIsCheckingPinned(false);
     }, 600);
-  }, []);
+  }, [watchedTicketKeys]);
 
   // Periodic interval check every 30 seconds for pinned ticket updates
   useEffect(() => {
@@ -183,10 +200,17 @@ export default function App() {
 
   // Select Issue for Detail Modal
   const handleSelectIssue = (issue: JiraIssue) => {
-    setSelectedIssue(issue);
+    const isWatched = watchedTicketKeys.includes(issue.key.toUpperCase());
+    const enrichedIssue = { ...issue, isWatched };
+    setSelectedIssue(enrichedIssue);
+
+    // Track recently viewed tickets (last 5)
+    const updatedRV = addRecentlyViewedTicket(enrichedIssue);
+    setRecentlyViewed(updatedRV);
+
     // Cache issue if auto cache is on
     if (settings.autoCacheOnSearch) {
-      const updatedCache = cacheIssue(issue, settings.maxCachedTickets);
+      const updatedCache = cacheIssue(enrichedIssue, settings.maxCachedTickets);
       setCachedIssues(updatedCache);
       refreshCacheState();
     }
@@ -213,6 +237,16 @@ export default function App() {
     }
   };
 
+  // Toggle Watch Ticket Handler
+  const handleToggleWatchTicket = (key: string) => {
+    const updatedKeys = toggleWatchTicketKey(key);
+    setWatchedTicketKeys(updatedKeys);
+    if (selectedIssue && selectedIssue.key.toUpperCase() === key.toUpperCase()) {
+      setSelectedIssue((prev) => (prev ? { ...prev, isWatched: !prev.isWatched } : null));
+    }
+    performSearch(searchQuery);
+  };
+
   // Bulk Pin Handler
   const handleBulkPin = (keys: string[]) => {
     keys.forEach((k) => togglePinTicketKey(k));
@@ -224,6 +258,32 @@ export default function App() {
     keys.forEach((k) => removeCachedIssue(k));
     refreshCacheState();
     performSearch(searchQuery);
+  };
+
+  // Bulk Update Status Handler
+  const handleBulkUpdateStatus = (keys: string[], newStatusName: string, category: StatusCategory) => {
+    const keySet = new Set(keys.map(k => k.toUpperCase()));
+    const updateFn = (issue: JiraIssue): JiraIssue => {
+      if (keySet.has(issue.key.toUpperCase())) {
+        return {
+          ...issue,
+          status: { name: newStatusName, category },
+          updated: new Date().toISOString(),
+        };
+      }
+      return issue;
+    };
+
+    setSearchResults((prev) => prev.map(updateFn));
+    setCachedIssues((prev) => prev.map((issue) => {
+      if (keySet.has(issue.key.toUpperCase())) {
+        const updated = updateFn(issue);
+        cacheIssue(updated, settings.maxCachedTickets);
+        return updated;
+      }
+      return issue;
+    }));
+    refreshCacheState();
   };
 
   // Update Status in detail view
@@ -417,6 +477,8 @@ export default function App() {
                   onTogglePinTicket={handleTogglePinTicket}
                   onBulkPin={handleBulkPin}
                   onBulkRemoveFromCache={handleBulkRemoveFromCache}
+                  onBulkUpdateStatus={handleBulkUpdateStatus}
+                  recentlyViewed={recentlyViewed}
                   isOfflineResult={isOfflineResult}
                   searchQuery={searchQuery}
                 />
@@ -504,6 +566,7 @@ export default function App() {
         onUpdateIssuePriority={handleUpdateIssuePriority}
         onAddComment={handleAddComment}
         onTogglePinTicket={handleTogglePinTicket}
+        onToggleWatchTicket={handleToggleWatchTicket}
         jiraUrl={settings.jiraUrl}
       />
 

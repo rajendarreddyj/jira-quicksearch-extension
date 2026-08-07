@@ -66,6 +66,7 @@ export interface JiraIssue {
   fixVersion?: string;
   statusTime?: StatusDuration[];
   isPinned?: boolean;
+  isWatched?: boolean;
   subtasks?: JiraSubtask[];
 }
 

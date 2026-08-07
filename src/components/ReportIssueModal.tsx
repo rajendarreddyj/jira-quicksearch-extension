@@ -31,10 +31,10 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
       userEmail: settings.userEmail,
       projectKey: settings.projectKey,
       maxCachedTickets: settings.maxCachedTickets,
-      autoSyncInterval: settings.autoSyncIntervalMinutes,
-      defaultViewMode: settings.defaultViewMode,
+      autoCacheOnSearch: settings.autoCacheOnSearch,
+      viewMode: settings.viewMode,
       theme: settings.theme,
-      apiKeyConfigured: !!settings.jiraApiKey,
+      apiKeyConfigured: !!settings.apiToken,
     },
     stateStats: {
       cachedTicketsCount: cachedCount,

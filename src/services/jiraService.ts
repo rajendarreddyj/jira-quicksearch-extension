@@ -5,6 +5,63 @@ const SETTINGS_KEY = 'jira_ext_settings';
 const HISTORY_KEY = 'jira_ext_history';
 const CACHED_ISSUES_KEY = 'jira_ext_cached_issues';
 const PINNED_TICKETS_KEY = 'jira_ext_pinned_tickets';
+const WATCHED_TICKETS_KEY = 'jira_ext_watched_tickets';
+const RECENTLY_VIEWED_KEY = 'jira_ext_recently_viewed';
+
+// --- WATCHED TICKETS MANAGEMENT ---
+export function getWatchedTicketKeys(): string[] {
+  try {
+    const raw = localStorage.getItem(WATCHED_TICKETS_KEY);
+    if (!raw) {
+      const initial = ['PROJ-101'];
+      localStorage.setItem(WATCHED_TICKETS_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    return ['PROJ-101'];
+  }
+}
+
+export function toggleWatchTicketKey(key: string): string[] {
+  const current = getWatchedTicketKeys();
+  const upperKey = key.toUpperCase();
+  let updated: string[];
+  if (current.includes(upperKey)) {
+    updated = current.filter(k => k !== upperKey);
+  } else {
+    updated = [upperKey, ...current];
+  }
+  try {
+    localStorage.setItem(WATCHED_TICKETS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to save watched tickets:', e);
+  }
+  return updated;
+}
+
+// --- RECENTLY VIEWED TICKETS MANAGEMENT ---
+export function getRecentlyViewedTickets(): JiraIssue[] {
+  try {
+    const raw = localStorage.getItem(RECENTLY_VIEWED_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+export function addRecentlyViewedTicket(issue: JiraIssue): JiraIssue[] {
+  const current = getRecentlyViewedTickets();
+  const filtered = current.filter(i => i.key.toUpperCase() !== issue.key.toUpperCase());
+  const updated = [issue, ...filtered].slice(0, 5); // keep max 5
+  try {
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to save recently viewed tickets:', e);
+  }
+  return updated;
+}
 
 // --- PINNED TICKETS MANAGEMENT ---
 export function getPinnedTicketKeys(): string[] {

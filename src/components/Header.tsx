@@ -16,7 +16,9 @@ import {
   Activity,
   HelpCircle,
   Keyboard,
-  Bell
+  Bell,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -57,6 +59,13 @@ export const Header: React.FC<HeaderProps> = ({
     onUpdateSettings({
       ...settings,
       isSimulatedOffline: !settings.isSimulatedOffline,
+    });
+  };
+
+  const toggleTheme = () => {
+    onUpdateSettings({
+      ...settings,
+      theme: settings.theme === 'dark' ? 'light' : 'dark',
     });
   };
 
@@ -110,6 +119,19 @@ export const Header: React.FC<HeaderProps> = ({
               <Maximize2 className="w-3.5 h-3.5" />
             ) : (
               <Minimize2 className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            title={settings.theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-md transition-colors"
+          >
+            {settings.theme === 'dark' ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-indigo-300" />
             )}
           </button>
 
