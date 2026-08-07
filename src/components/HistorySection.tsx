@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SearchHistoryItem } from '../types';
-import { History, Pin, Trash2, ArrowRight, Search, Clock, Check, Download } from 'lucide-react';
+import { History, Pin, Trash2, ArrowRight, Search, Clock, Check, Download, Copy } from 'lucide-react';
 
 interface HistorySectionProps {
   history: SearchHistoryItem[];
@@ -18,6 +18,26 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
   onClearAllHistory,
 }) => {
   const [confirmClear, setConfirmClear] = React.useState(false);
+  const [copiedJqlId, setCopiedJqlId] = useState<string | null>(null);
+
+  const getFullJql = (item: SearchHistoryItem) => {
+    if (item.isJql || item.query.toLowerCase().includes('project =') || item.query.toLowerCase().includes('assignee =') || item.query.toLowerCase().includes('status =') || item.query.toLowerCase().includes('order by')) {
+      return item.query;
+    }
+    if (/^[A-Z0-9]+-\d+$/i.test(item.query.trim())) {
+      return `issueKey = "${item.query.trim().toUpperCase()}"`;
+    }
+    const proj = item.projectKey || 'PROJ';
+    return `project in (${proj}) AND text ~ "${item.query}"`;
+  };
+
+  const handleCopyJql = (item: SearchHistoryItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const jql = getFullJql(item);
+    navigator.clipboard.writeText(jql);
+    setCopiedJqlId(item.id);
+    setTimeout(() => setCopiedJqlId(null), 2000);
+  };
 
   const handleDownloadHistoryJSON = () => {
     if (history.length === 0) return;
@@ -150,6 +170,23 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    onClick={(e) => handleCopyJql(item, e)}
+                    title="Copy full JQL query string to clipboard"
+                    className="p-1 text-slate-500 hover:text-blue-700 rounded hover:bg-amber-200/50 flex items-center gap-1 text-[10px] font-semibold transition-colors"
+                  >
+                    {copiedJqlId === item.id ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Copy JQL</span>
+                      </>
+                    )}
+                  </button>
+                  <button
                     onClick={() => onTogglePin(item.id)}
                     title="Unpin query"
                     className="p-1 text-amber-700 hover:text-amber-900 rounded hover:bg-amber-200/50"
@@ -203,6 +240,23 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={(e) => handleCopyJql(item, e)}
+                  title="Copy full JQL query string to clipboard"
+                  className="p-1 text-slate-500 hover:text-blue-600 rounded hover:bg-slate-100 flex items-center gap-1 text-[10px] font-semibold transition-colors"
+                >
+                  {copiedJqlId === item.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+                      <span className="hidden sm:inline">Copy JQL</span>
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={() => onTogglePin(item.id)}
                   title="Pin query to top"

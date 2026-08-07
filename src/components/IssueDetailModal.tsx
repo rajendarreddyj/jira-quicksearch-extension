@@ -26,7 +26,11 @@ import {
   GitPullRequest,
   CheckSquare,
   Printer,
-  FileText
+  FileText,
+  Timer,
+  NotebookPen,
+  Save,
+  Trash2
 } from 'lucide-react';
 
 interface IssueDetailModalProps {
@@ -37,6 +41,7 @@ interface IssueDetailModalProps {
   onAddComment?: (key: string, commentText: string) => void;
   onTogglePinTicket?: (key: string) => void;
   onToggleWatchTicket?: (key: string) => void;
+  onFilterByLabel?: (label: string) => void;
   jiraUrl: string;
 }
 
@@ -48,6 +53,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   onAddComment,
   onTogglePinTicket,
   onToggleWatchTicket,
+  onFilterByLabel,
   jiraUrl,
 }) => {
   const [newCommentText, setNewCommentText] = useState('');
@@ -56,6 +62,37 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 
   // Subtasks local state
   const [subtasks, setSubtasks] = useState<JiraSubtask[]>([]);
+
+  // Scratchpad / Local Notes state for this ticket
+  const [scratchpadNote, setScratchpadNote] = useState<string>('');
+  const [scratchpadSaved, setScratchpadSaved] = useState<boolean>(false);
+
+  // Load ticket scratchpad from localStorage whenever selected issue changes
+  useEffect(() => {
+    if (issue) {
+      const storedNote = localStorage.getItem(`jira_scratchpad_${issue.key.toUpperCase()}`) || '';
+      setScratchpadNote(storedNote);
+      setScratchpadSaved(false);
+    }
+  }, [issue]);
+
+  const handleScratchpadChange = (text: string) => {
+    setScratchpadNote(text);
+    if (issue) {
+      localStorage.setItem(`jira_scratchpad_${issue.key.toUpperCase()}`, text);
+      setScratchpadSaved(true);
+      setTimeout(() => setScratchpadSaved(false), 2000);
+    }
+  };
+
+  const handleClearScratchpad = () => {
+    setScratchpadNote('');
+    if (issue) {
+      localStorage.removeItem(`jira_scratchpad_${issue.key.toUpperCase()}`);
+      setScratchpadSaved(true);
+      setTimeout(() => setScratchpadSaved(false), 2000);
+    }
+  };
 
   // Keyboard Shortcuts in Detail Modal (Alt+1, Alt+2, Alt+3, Alt+P, Cmd+P)
   useEffect(() => {
@@ -574,6 +611,45 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
             </div>
           </div>
 
+          {/* PERSONAL TICKET SCRATCHPAD */}
+          <div className="p-3.5 bg-blue-50/70 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl space-y-2 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                <NotebookPen className="w-4 h-4 text-blue-600" />
+                <span>Personal Ticket Scratchpad</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {scratchpadSaved && (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Saved locally
+                  </span>
+                )}
+                {scratchpadNote && (
+                  <button
+                    type="button"
+                    onClick={handleClearScratchpad}
+                    title="Clear Scratchpad Note"
+                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <textarea
+              rows={3}
+              value={scratchpadNote}
+              onChange={(e) => handleScratchpadChange(e.target.value)}
+              placeholder="Jot down quick personal notes, draft code snippets, or reminder checklists for this ticket... (Saved locally in browser cache)"
+              className="w-full text-xs p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none resize-y"
+            />
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>Private notes are stored only on this device (never sent to Jira).</span>
+              <span className="font-mono">{scratchpadNote.length} chars</span>
+            </div>
+          </div>
+
           {/* Attributes Grid */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
             <div>
@@ -646,12 +722,19 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               {issue.labels.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap text-xs">
                   <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
-                    <Tag className="w-3 h-3" /> Labels:
+                    <Tag className="w-3 h-3 text-blue-600" /> Labels:
                   </span>
                   {issue.labels.map(lbl => (
-                    <span key={lbl} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium text-[11px]">
-                      {lbl}
-                    </span>
+                    <button
+                      key={lbl}
+                      type="button"
+                      onClick={() => onFilterByLabel?.(lbl)}
+                      className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/60 hover:text-blue-900 px-2 py-0.5 rounded-full font-semibold text-[11px] transition-all border border-blue-200 dark:border-blue-700/60 flex items-center gap-1 group cursor-pointer shadow-2xs"
+                      title={`Click tag to filter issues list by label "${lbl}"`}
+                    >
+                      <Tag className="w-2.5 h-2.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                      <span>{lbl}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -774,6 +857,65 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* Time Tracking Section */}
+          {(() => {
+            const tt = issue.timeTracking;
+            const origSec = tt?.originalEstimateSeconds || (tt?.timeSpentSeconds ? tt.timeSpentSeconds + (tt.remainingEstimateSeconds || 0) : 0);
+            const spentSec = tt?.timeSpentSeconds || 0;
+            const remSec = tt?.remainingEstimateSeconds || Math.max(0, origSec - spentSec);
+            const pct = origSec > 0 ? Math.min(100, Math.round((spentSec / origSec) * 100)) : (spentSec > 0 ? 100 : 0);
+
+            const spentDisplay = tt?.timeSpentText || (spentSec > 0 ? `${Math.round(spentSec / 3600)}h` : '0h');
+            const remDisplay = tt?.remainingEstimateText || (remSec > 0 ? `${Math.round(remSec / 3600)}h` : '0h');
+            const origDisplay = tt?.originalEstimateText || (origSec > 0 ? `${Math.round(origSec / 3600)}h` : 'Not specified');
+
+            return (
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <Timer className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>Time Tracking</span>
+                  </h3>
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                    {pct}% logged
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1">
+                  <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                    <div
+                      style={{ width: `${pct}%` }}
+                      className="bg-indigo-600 dark:bg-indigo-500 h-full transition-all duration-300"
+                      title={`Logged: ${spentDisplay}`}
+                    />
+                    <div
+                      style={{ width: `${100 - pct}%` }}
+                      className="bg-slate-300 dark:bg-slate-600 h-full transition-all duration-300 opacity-60"
+                      title={`Remaining: ${remDisplay}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Tracking Stats Pill Row */}
+                <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700/80">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Logged</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200 text-xs font-mono">{spentDisplay}</div>
+                  </div>
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700/80">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Remaining</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200 text-xs font-mono">{remDisplay}</div>
+                  </div>
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700/80">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Original Est.</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200 text-xs font-mono">{origDisplay}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Description Section */}
           <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">

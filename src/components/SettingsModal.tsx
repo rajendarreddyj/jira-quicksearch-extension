@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ExtensionSettings } from '../types';
+import { loadSearchHistory, saveSearchHistory, getCachedIssues } from '../services/jiraService';
 import { 
   Settings, 
   Trash2, 
@@ -47,6 +48,76 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  const handleExportJSON = () => {
+    const exportData = {
+      settings: formData,
+      searchHistory: loadSearchHistory(),
+      cachedTicketsCount: getCachedIssues().length,
+      exportedAt: new Date().toISOString(),
+      version: '2.5.0',
+    };
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `jira_extension_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+
+        if (parsed && typeof parsed === 'object') {
+          const newSettings = parsed.settings || parsed;
+          if (newSettings.jiraUrl !== undefined || newSettings.projectKey !== undefined) {
+            const merged: ExtensionSettings = {
+              ...formData,
+              ...newSettings,
+            };
+            setFormData(merged);
+            onSaveSettings(merged);
+
+            if (Array.isArray(parsed.searchHistory)) {
+              saveSearchHistory(parsed.searchHistory);
+            }
+
+            setImportStatus({
+              success: true,
+              message: 'Settings and search history imported successfully!',
+            });
+            setTimeout(() => setImportStatus(null), 3500);
+          } else {
+            setImportStatus({
+              success: false,
+              message: 'Invalid backup format. Required settings keys missing.',
+            });
+          }
+        }
+      } catch (err) {
+        setImportStatus({
+          success: false,
+          message: 'Failed to parse JSON backup file.',
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleChange = (field: keyof ExtensionSettings, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -311,7 +382,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Auto Cache Toggle */}
           <div className="flex items-center justify-between pt-1">
             <div>
-              <span className="text-xs font-semibold text-slate-800 block">Auto-Cache Searched Tickets</span>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Auto-Cache Searched Tickets</span>
               <span className="text-[10px] text-slate-400 block">Automatically store fetched Jira tickets for offline viewing</span>
             </div>
             <input
@@ -321,6 +392,130 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
             />
           </div>
+
+          {/* Enable Auto-Refresh Toggle */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <div>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Enable Auto-Refresh</span>
+              <span className="text-[10px] text-slate-400 block">Triggers a background refresh of cached tickets every 15 minutes</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={formData.enableAutoRefresh ?? true}
+              onChange={(e) => handleChange('enableAutoRefresh', e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-0 accent-blue-600 cursor-pointer"
+            />
+          </div>
+
+          {/* Group Cached Tickets Setting */}
+          <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+              Group Cached Tickets In Manager
+            </label>
+            <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => handleChange('groupCachedBy', 'none')}
+                className={`px-1.5 py-1.5 rounded-lg text-xs font-semibold border text-center transition-all ${
+                  (formData.groupCachedBy || 'none') === 'none'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                None
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('groupCachedBy', 'status')}
+                className={`px-1.5 py-1.5 rounded-lg text-xs font-semibold border text-center transition-all ${
+                  formData.groupCachedBy === 'status'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                Status
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('groupCachedBy', 'project')}
+                className={`px-1.5 py-1.5 rounded-lg text-xs font-semibold border text-center transition-all ${
+                  formData.groupCachedBy === 'project'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                Project
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('groupCachedBy', 'priority')}
+                className={`px-1.5 py-1.5 rounded-lg text-xs font-semibold border text-center transition-all ${
+                  formData.groupCachedBy === 'priority'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                Priority
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Automatically organizes offline cached issues under collapsable group headings in the Cached Tickets tab.
+            </p>
+          </div>
+        </div>
+
+        {/* Multi-Device Sync & Export/Import JSON Card */}
+        <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
+            <span className="flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              Backup & Multi-Device Synchronization
+            </span>
+            <span className="text-[10px] text-slate-400 font-normal">JSON Export/Import</span>
+          </div>
+
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Export your current extension settings and search history as a JSON file, or import from a file to sync across browser profiles or devices.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleExportJSON}
+              className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-blue-200 dark:border-blue-700/60"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Settings & History JSON</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-slate-200 dark:border-slate-600"
+            >
+              <Upload className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Import Settings JSON</span>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleFileImport}
+              className="hidden"
+            />
+          </div>
+
+          {importStatus && (
+            <div className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+              importStatus.success
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-rose-50 text-rose-700 border border-rose-200'
+            }`}>
+              {importStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />}
+              <span>{importStatus.message}</span>
+            </div>
+          )}
         </div>
 
         {/* Save Settings Button */}

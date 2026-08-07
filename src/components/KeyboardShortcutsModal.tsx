@@ -11,6 +11,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
       title: 'Global Navigation & Search',
       items: [
         { keyCombo: ['⌘', 'K'], label: 'Focus Search Bar & Select Text' },
+        { keyCombo: ['⌘', 'Shift', 'L'], label: 'Jump to Cached Tickets Tab' },
         { keyCombo: ['?'], label: 'Open Keyboard Shortcuts Cheat Sheet' },
         { keyCombo: ['Esc'], label: 'Close Active Modal / Clear Selection' },
       ],

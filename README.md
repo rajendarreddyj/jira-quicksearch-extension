@@ -1,20 +1,28 @@
 # Jira QuickSearch - Chrome Extension & Web Application
 
+![Jira QuickSearch Banner](/src/assets/images/jira_extension_hero_1786100697598.jpg)
+
 **Jira QuickSearch** is a fast, offline-capable Chrome Extension and Web Dashboard designed for engineering teams and managers to instantly search, inspect, cache, watch, and transition Jira issues without waiting for Jira's slow web interface to load.
+
+![Feature Overview](/src/assets/images/jira_extension_preview_1786100709655.jpg)
 
 ---
 
 ## 🌟 Key Features
 
-- ⚡ **Instant Search & JQL Support**: Search by issue key (`PROJ-101`), summary, assignee, or full JQL query expressions with syntax auto-completion.
-- 💾 **Smart Offline Caching**: Automatically cache opened tickets in `localStorage` with customizable capacity limits, cache expiration policy, and CSV export/import capabilities.
-- 🕒 **Recently Viewed Tickets**: Quick horizontal bar tracking the last 5 tickets opened in the detail modal for instant re-access.
-- 👁️ **Ticket Watching & Pin Alerts**: Watch and pin critical tickets to receive real-time status change and comment update notifications.
-- 🏷️ **Bulk Ticket Management**: Multi-select issues to transition status (e.g. `To Do` -> `In Progress` -> `Done`), pin, or manage cache in bulk with one click.
-- 📝 **Markdown Rendering**: Full GitHub Flavored Markdown support for Jira issue descriptions, comments, and acceptance criteria.
-- 🔗 **Direct Jira Link Copying**: Copy direct ticket URLs to clipboard instantly for sharing in Slack or Microsoft Teams.
-- 🌙 **Dark & Light Mode**: Clean, high-contrast dark theme toggle designed for comfortable viewing during night shifts.
-- ⌨️ **Keyboard Shortcuts**: Complete shortcut support (`Ctrl+K` search focus, `Esc` close modal, `J/K` navigation).
+- ⚡ **Instant Search & JQL Autocomplete**: Search by issue key (`PROJ-101`), summary, assignee, or JQL query expressions with real-time autocompletion for recent fragments, operators, and issue key prefixes.
+- 🏷️ **Quick Filter Chips**: Filter currently loaded tickets instantly by `My Issues`, `High Priority`, `In Progress`, `Done`, or `Unassigned` without triggering additional network requests.
+- ⏱️ **Time Tracking Progress Bar**: Displays original estimate, logged time spent, and remaining hours formatted into a color-coded visual progress bar in the ticket detail modal.
+- 💾 **Smart Offline Cache & Grouping**: Cache opened tickets in `localStorage` with customizable capacity limits, cache expiration policies, CSV export, and auto-grouping by **Status** or **Project**.
+- 🔄 **15-Minute Auto-Refresh**: Background periodic auto-refresh keeps offline cached tickets synced with the latest updates on Jira Cloud.
+- 📑 **Interactive Labels & Tags**: Click any issue label tag in the detail view to instantly filter the issue list by `labels = "label_name"`.
+- 🖨️ **Print to PDF View**: Clean, print-formatted document modal tailored for physical printing or saving ticket details directly as PDF.
+- 📋 **Copy JQL String to Clipboard**: Easily copy full JQL query strings from search history with one click to reuse complex queries in Jira Cloud.
+- 📤 **Settings JSON Export / Import**: Backup, export, or restore your configuration settings and search history across multiple devices via lightweight JSON files.
+- 👁️ **Ticket Watching & Pin Alerts**: Watch and pin critical tickets to receive status change and comment update notifications.
+- 📝 **Markdown & Subtasks**: Full GitHub Flavored Markdown support for Jira descriptions and comments, plus inline subtask progress tracking.
+- 🌙 **Dark & Light Theme**: Clean, high-contrast dark theme toggle designed for comfortable viewing during night shifts.
+- 🤖 **CI/CD GitHub Actions**: Includes automated workflows for linting on every commit and automated release packaging on tag creation.
 
 ---
 
@@ -29,13 +37,14 @@
 | |   +-------------------+  +--------------------+  +-------------------------+  | |
 | |   |   Header & Nav    |  | Search & JQL Panel |  |  Issue List & Bulk Bar  |  | |
 | |   +-------------------+  +--------------------+  +-------------------------+  | |
-| |   | - Dark Mode Toggle|  | - JQL Helper       |  | - Recently Viewed (5)   |  | |
-| |   | - Notifications   |  | - Search History   |  | - Bulk Status Change    |  | |
+| |   | - Dark Mode Toggle|  | - JQL Autocomplete |  | - Quick Filter Chips    |  | |
+| |   | - Auto-Refresh    |  | - Copy JQL String  |  | - Interactive Labels    |  | |
 | |   +-------------------+  +--------------------+  +-------------------------+  | |
 | |                                                                               | |
 | |   +-----------------------------------------------------------------------+   | |
 | |   |                         Issue Detail Drawer                           |   | |
-| |   | - Markdown Description & Comments  | - Copy Jira Link | - Watch/Pin   |   | |
+| |   | - Time Tracking Progress Bar   | - Print to PDF Mode                  |   | |
+| |   | - Interactive Labels Filtering | - Markdown Comments & Subtasks       |   | |
 | |   +-----------------------------------------------------------------------+   | |
 | +-------------------------------------------------------------------------------+ |
 +------------------------------------------|----------------------------------------+
@@ -46,8 +55,8 @@
 | +-------------------------------------------------------------------------------+ |
 | |                             jiraService.ts Engine                             | |
 | |                                                                               | |
-| |  - Local Cache Storage Manager          - Watcher & Pin Notification Engine    | |
-| |  - Offline Fallback Engine              - History & Settings Persistence      | |
+| |  - Local Cache & Grouping Engine        - Watcher & Pin Notification Engine    | |
+| |  - Auto-Refresh Interval Engine         - Settings JSON Import/Export Engine  | |
 | +-------------------------------------------------------------------------------+ |
 +------------------------------------------|----------------------------------------+
                                            |
@@ -66,13 +75,27 @@
 
 ---
 
+## 🤖 GitHub Actions CI/CD
+
+The repository includes pre-configured GitHub Actions workflows located in `.github/workflows/`:
+
+1. **Linting Workflow** (`.github/workflows/lint.yml`):
+   - Triggers automatically on every `push` and `pull_request` to `main` or `master`.
+   - Runs `npm run lint` to enforce code quality and TypeScript safety.
+
+2. **Release Package Workflow** (`.github/workflows/release.yml`):
+   - Triggers on tag pushes (`v*`) or manual workflow dispatch.
+   - Builds the production bundle (`npm run build`), packages the Chrome extension into a `.zip` artifact, and creates a GitHub Release.
+
+---
+
 ## 🛠️ Development & Building
 
 ### Prerequisites
 - Node.js 18+
 - npm or bun
 
-### Local Setup
+### Local Commands
 ```bash
 # Install dependencies
 npm install

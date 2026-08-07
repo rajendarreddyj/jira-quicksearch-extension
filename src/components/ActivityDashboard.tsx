@@ -12,7 +12,7 @@ import {
   Legend, 
   CartesianGrid 
 } from 'recharts';
-import { Activity, Calendar, TrendingUp, User, Tag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Activity, Calendar, TrendingUp, User, Tag, CheckCircle2, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
 
 interface ActivityDashboardProps {
   issues: JiraIssue[];
@@ -88,6 +88,37 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
     return [...dailyActivityData].sort((a, b) => b.total - a.total)[0];
   }, [dailyActivityData]);
 
+  // CSV Exporter for displayed issues
+  const handleExportIssuesCSV = () => {
+    if (!issues || issues.length === 0) return;
+
+    const headers = ['Key', 'Summary', 'Type', 'Status', 'Priority', 'Assignee', 'Reporter', 'Created', 'Updated'];
+    const escapeCsv = (val: string) => `"${(val || '').replace(/"/g, '""')}"`;
+
+    const rows = issues.map((issue) => [
+      escapeCsv(issue.key),
+      escapeCsv(issue.summary),
+      escapeCsv(issue.issueType.name),
+      escapeCsv(issue.status.name),
+      escapeCsv(issue.priority.name),
+      escapeCsv(issue.assignee.name),
+      escapeCsv(issue.reporter.name),
+      escapeCsv(issue.created),
+      escapeCsv(issue.updated),
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `jira_issues_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Color mapper for 30-day activity heatmap cells
   const getHeatmapBg = (count: number) => {
     if (count === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200';
@@ -118,6 +149,14 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportIssuesCSV}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 border border-emerald-500"
+            title="Export currently displayed issues list to CSV for team reports"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV Report</span>
+          </button>
           <button
             onClick={() => setTimeRangeDays(14)}
             className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
@@ -246,6 +285,57 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({ issues, on
               <Area type="monotone" dataKey="updated" name="Updated Issues" stroke="#10b981" fillOpacity={1} fill="url(#colorUpdated)" />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Active Scope Issues Table & CSV Report Generator */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+          <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800 dark:text-slate-100">
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Active Scope Issues ({issues.length} Tickets)</span>
+          </div>
+          <button
+            onClick={handleExportIssuesCSV}
+            className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800 cursor-pointer shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Download Team Meeting Report (.CSV)</span>
+          </button>
+        </div>
+
+        <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-64 overflow-y-auto">
+          {issues.map((issue) => (
+            <div
+              key={issue.key}
+              onClick={() => onSelectIssue(issue)}
+              className="p-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer group"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 group-hover:underline">
+                    {issue.key}
+                  </span>
+                  <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-600">
+                    {issue.status.name}
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500">
+                    {issue.priority.name}
+                  </span>
+                </div>
+                <h5 className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                  {issue.summary}
+                </h5>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 text-slate-400 group-hover:text-slate-600">
+                <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
+                  {issue.assignee.name}
+                </span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

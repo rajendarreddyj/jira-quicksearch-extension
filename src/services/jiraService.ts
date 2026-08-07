@@ -430,6 +430,9 @@ function searchLocalCacheAndMocks(
     } else if (cleanQuery.startsWith('status =')) {
       const statusVal = cleanQuery.replace('status =', '').replace(/"/g, '').trim();
       filtered = filtered.filter(i => i.status.name.toLowerCase().includes(statusVal));
+    } else if (cleanQuery.includes('labels =') || cleanQuery.includes('label =')) {
+      const labelVal = cleanQuery.replace(/labels?\s*=\s*/, '').replace(/"/g, '').trim();
+      filtered = filtered.filter(i => i.labels.some(l => l.toLowerCase().includes(labelVal.toLowerCase())));
     } else if (/^[a-z0-9]+-\d+$/i.test(cleanQuery)) {
       filtered = filtered.filter(i => i.key.toLowerCase() === cleanQuery);
     } else {

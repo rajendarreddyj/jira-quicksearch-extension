@@ -53,9 +53,21 @@ export const IssueList: React.FC<IssueListProps> = ({
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'my' | 'high_priority' | 'in_progress' | 'done' | 'bugs'>('all');
   const [sortBy, setSortBy] = useState<'updated' | 'priority' | 'created' | 'assignee'>('updated');
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+
+  // Compute Quick Filter counts dynamically
+  const myCount = issues.filter(i => {
+    const a = (i.assignee?.name || '').toLowerCase();
+    const e = (i.assignee?.email || '').toLowerCase();
+    return a.includes('sarah') || a.includes('you') || e.includes('sarah');
+  }).length;
+  const highCount = issues.filter(i => ['high', 'highest', 'critical'].includes((i.priority?.name || '').toLowerCase())).length;
+  const inProgressCount = issues.filter(i => i.status?.category === 'in-progress' || (i.status?.name || '').toLowerCase().includes('progress')).length;
+  const doneCount = issues.filter(i => i.status?.category === 'done' || (i.status?.name || '').toLowerCase().includes('done')).length;
+  const bugsCount = issues.filter(i => i.issueType?.name === 'Bug').length;
 
   // Priority weight map for sorting
   const getPriorityWeight = (pName?: string) => {
@@ -70,7 +82,23 @@ export const IssueList: React.FC<IssueListProps> = ({
   // Filter & Sort issues
   const filteredIssues = issues
     .filter((issue) => {
-      // Priority filter
+      // Quick Filter chips
+      if (quickFilter === 'my') {
+        const aName = (issue.assignee?.name || '').toLowerCase();
+        const aEmail = (issue.assignee?.email || '').toLowerCase();
+        if (!aName.includes('sarah') && !aName.includes('you') && !aEmail.includes('sarah')) return false;
+      } else if (quickFilter === 'high_priority') {
+        const pName = (issue.priority?.name || '').toLowerCase();
+        if (!['high', 'highest', 'critical'].includes(pName)) return false;
+      } else if (quickFilter === 'in_progress') {
+        if (issue.status?.category !== 'in-progress' && !issue.status?.name.toLowerCase().includes('progress')) return false;
+      } else if (quickFilter === 'done') {
+        if (issue.status?.category !== 'done' && !issue.status?.name.toLowerCase().includes('done')) return false;
+      } else if (quickFilter === 'bugs') {
+        if (issue.issueType?.name !== 'Bug') return false;
+      }
+
+      // Priority filter dropdown
       if (priorityFilter !== 'ALL') {
         const p = (issue.priority?.name || '').toLowerCase();
         const filterP = priorityFilter.toLowerCase();
@@ -346,6 +374,98 @@ export const IssueList: React.FC<IssueListProps> = ({
           <span className="font-semibold text-slate-900">{issues.length} tickets</span>
         </div>
       )}
+
+      {/* Quick Filter Chips Row */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin text-xs">
+        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+          <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span>Quick Filters:</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('all')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'all'
+              ? 'bg-blue-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>All</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'all' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {issues.length}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('my')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'my'
+              ? 'bg-blue-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>My Issues</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'my' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {myCount}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('high_priority')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'high_priority'
+              ? 'bg-amber-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>High Priority</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'high_priority' ? 'bg-amber-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {highCount}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('in_progress')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'in_progress'
+              ? 'bg-blue-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>In Progress</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'in_progress' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {inProgressCount}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('done')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'done'
+              ? 'bg-emerald-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>Done</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'done' ? 'bg-emerald-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {doneCount}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickFilter('bugs')}
+          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            quickFilter === 'bugs'
+              ? 'bg-rose-600 text-white shadow-2xs'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <span>Bugs</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'bugs' ? 'bg-rose-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+            {bugsCount}
+          </span>
+        </button>
+      </div>
 
       {/* Control Toolbar: Focus Mode, Select All, Priority & Sort */}
       <div className="flex flex-wrap items-center justify-between bg-white p-2 rounded-xl border border-slate-200 shadow-2xs gap-2">

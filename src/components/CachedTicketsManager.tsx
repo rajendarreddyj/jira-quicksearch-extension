@@ -67,7 +67,38 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
     }
   };
 
-  const percentageUsed = Math.min(100, Math.round((cacheStats.totalCached / cacheStats.maxLimit) * 100));
+  // Active grouping calculation
+  const percentageUsed = Math.min(100, Math.round((cacheStats.totalCached / (cacheStats.maxLimit || 1)) * 100));
+  const activeGroupMode = settings.groupCachedBy || 'none';
+
+  const groupedIssues = React.useMemo(() => {
+    if (activeGroupMode === 'none') return null;
+
+    const groups: Record<string, JiraIssue[]> = {};
+    cachedIssues.forEach((issue) => {
+      let groupKey = 'Other';
+      if (activeGroupMode === 'status') {
+        groupKey = issue.status?.name || 'Unassigned Status';
+      } else if (activeGroupMode === 'project') {
+        groupKey = issue.key.split('-')[0]?.toUpperCase() || 'Other Project';
+      } else if (activeGroupMode === 'priority') {
+        const pName = (issue.priority?.name || '').toLowerCase();
+        if (pName.includes('highest') || pName.includes('high') || pName.includes('blocker') || pName.includes('critical')) {
+          groupKey = '🔥 High Priority Swimlane';
+        } else if (pName.includes('medium') || pName.includes('normal')) {
+          groupKey = '⚡ Medium Priority Swimlane';
+        } else if (pName.includes('low') || pName.includes('minor') || pName.includes('trivial')) {
+          groupKey = '☕ Low Priority Swimlane';
+        } else {
+          groupKey = `${issue.priority?.name || 'Unassigned'} Priority Swimlane`;
+        }
+      }
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(issue);
+    });
+
+    return groups;
+  }, [cachedIssues, activeGroupMode]);
 
   // Status Distribution calculation for Recharts
   const statusCounts = cachedIssues.reduce((acc, issue) => {
@@ -283,12 +314,62 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-          <HardDrive className="w-3.5 h-3.5 text-slate-600" />
-          Cached Tickets ({cachedIssues.length})
-        </h4>
+      {/* Action Bar & Grouping Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <HardDrive className="w-3.5 h-3.5 text-slate-600" />
+            Cached Tickets ({cachedIssues.length})
+          </h4>
+
+          {/* Grouping Mode Quick Selector */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px]">
+            <button
+              type="button"
+              onClick={() => onUpdateSettings({ ...settings, groupCachedBy: 'none' })}
+              className={`px-2 py-0.5 rounded font-semibold transition-all ${
+                activeGroupMode === 'none'
+                  ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              Flat
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateSettings({ ...settings, groupCachedBy: 'status' })}
+              className={`px-2 py-0.5 rounded font-semibold transition-all ${
+                activeGroupMode === 'status'
+                  ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              Status
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateSettings({ ...settings, groupCachedBy: 'project' })}
+              className={`px-2 py-0.5 rounded font-semibold transition-all ${
+                activeGroupMode === 'project'
+                  ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              Project
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateSettings({ ...settings, groupCachedBy: 'priority' })}
+              className={`px-2 py-0.5 rounded font-semibold transition-all ${
+                activeGroupMode === 'priority'
+                  ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              Priority
+            </button>
+          </div>
+        </div>
 
         {cachedIssues.length > 0 && (
           <div className="flex items-center gap-2">
@@ -334,7 +415,7 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
         )}
       </div>
 
-      {/* List of Cached Tickets */}
+      {/* List of Cached Tickets (Flat vs Grouped) */}
       {cachedIssues.length === 0 ? (
         <div className="p-8 text-center space-y-3 bg-white border border-slate-200 rounded-xl shadow-2xs">
           <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
@@ -347,7 +428,73 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
             </p>
           </div>
         </div>
+      ) : groupedIssues ? (
+        /* Grouped Ticket Layout */
+        <div className="space-y-3">
+          {Object.entries(groupedIssues).map(([groupTitle, issues]) => (
+            <div key={groupTitle} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+              <div className="bg-slate-50 dark:bg-slate-800 px-3.5 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-600" />
+                  <span>{activeGroupMode === 'status' ? `Status: ${groupTitle}` : `Project: ${groupTitle}`}</span>
+                </span>
+                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 dark:bg-blue-900/60 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200">
+                  {issues.length} {issues.length === 1 ? 'ticket' : 'tickets'}
+                </span>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {issues.map((issue) => (
+                  <div
+                    key={issue.key}
+                    className="p-3 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div 
+                      onClick={() => onSelectIssue(issue)}
+                      className="flex-1 cursor-pointer min-w-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-700 group-hover:underline">
+                          {issue.key}
+                        </span>
+                        <span className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-1.5 py-0.2 rounded border border-slate-200">
+                          {issue.status.name}
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-semibold text-slate-800 truncate mt-0.5">
+                        {issue.summary}
+                      </h5>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Cached: {formatTime(issue.cachedAt)} • Assignee: {issue.assignee.name}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => onSelectIssue(issue)}
+                        title="View cached ticket details"
+                        className="px-2 py-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-[11px] font-medium rounded flex items-center gap-1 transition-colors border border-slate-200"
+                      >
+                        <span>View</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        onClick={() => onRemoveFromCache(issue.key)}
+                        title="Remove ticket from offline cache"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
+        /* Flat List Layout */
         <div className="divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
           {cachedIssues.map((issue) => (
             <div

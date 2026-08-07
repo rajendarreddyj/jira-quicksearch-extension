@@ -45,6 +45,15 @@ export interface JiraSubtask {
   assignee?: JiraUser;
 }
 
+export interface TimeTrackingInfo {
+  originalEstimateSeconds?: number;
+  timeSpentSeconds?: number;
+  remainingEstimateSeconds?: number;
+  originalEstimateText?: string;
+  timeSpentText?: string;
+  remainingEstimateText?: string;
+}
+
 export interface JiraIssue {
   key: string;
   summary: string;
@@ -68,6 +77,7 @@ export interface JiraIssue {
   isPinned?: boolean;
   isWatched?: boolean;
   subtasks?: JiraSubtask[];
+  timeTracking?: TimeTrackingInfo;
 }
 
 export interface SearchHistoryItem {
@@ -87,6 +97,8 @@ export interface ExtensionSettings {
   apiToken: string;
   maxCachedTickets: number; // default 20
   autoCacheOnSearch: boolean;
+  enableAutoRefresh?: boolean; // background refresh of cached tickets every 15m
+  groupCachedBy?: 'none' | 'status' | 'project' | 'priority'; // auto-grouping in CachedTicketsManager
   viewMode: 'popup' | 'full'; // 'popup' simulates ~400px extension popup window
   isSimulatedOffline: boolean;
   theme: 'light' | 'dark' | 'system';

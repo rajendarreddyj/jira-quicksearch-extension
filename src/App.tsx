@@ -114,32 +114,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [checkForPinnedUpdates]);
 
-  // Global Keyboard Shortcut: Cmd+K / Ctrl+K to focus search input, and ? for Shortcuts modal
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      const isInput = targetTag === 'input' || targetTag === 'textarea';
-
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setActiveTab('search');
-        setTimeout(() => {
-          const searchInput = document.getElementById('jira-search-input');
-          if (searchInput) {
-            searchInput.focus();
-            (searchInput as HTMLInputElement).select();
-          }
-        }, 50);
-      } else if (!isInput && e.key === '?') {
-        e.preventDefault();
-        setShowShortcutsModal(prev => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, []);
-
   // Refresh cache stats
   const refreshCacheState = useCallback(() => {
     const cached = getCachedIssues();
@@ -181,9 +155,61 @@ export default function App() {
     }
   }, [settings, selectedProject, refreshCacheState]);
 
+  // 15-minute background auto-refresh of cached tickets when enableAutoRefresh is enabled
+  useEffect(() => {
+    if (!settings.enableAutoRefresh) return;
+
+    // 15 minutes = 15 * 60 * 1000 ms = 900,000 ms
+    const AUTO_REFRESH_INTERVAL = 15 * 60 * 1000;
+
+    const interval = setInterval(() => {
+      console.log('[Auto-Refresh] Background 15-minute refresh triggered for cached tickets.');
+      refreshCacheState();
+      if (searchQuery.trim()) {
+        performSearch(searchQuery);
+      }
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [settings.enableAutoRefresh, searchQuery, performSearch, refreshCacheState]);
+
   // Initial load search
   useEffect(() => {
     performSearch('');
+  }, []);
+
+  // Global Keyboard Shortcuts (Ctrl+K focus search, Ctrl+Shift+L jump to Cached Tickets tab)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = targetTag === 'input' || targetTag === 'textarea' || (e.target as HTMLElement)?.isContentEditable;
+
+      // Ctrl+K / Cmd+K -> Focus Search input
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setActiveTab('search');
+        setTimeout(() => {
+          const searchInput = document.getElementById('jira-search-input');
+          if (searchInput) {
+            searchInput.focus();
+            (searchInput as HTMLInputElement).select();
+          }
+        }, 50);
+      } 
+      // Ctrl+Shift+L / Cmd+Shift+L -> Jump directly to 'Cached Tickets' tab
+      else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toUpperCase() === 'L') {
+        e.preventDefault();
+        setActiveTab('cached');
+      }
+      // ? -> Toggle shortcuts modal
+      else if (!isInput && e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
   // Handle Project selector change
@@ -332,6 +358,14 @@ export default function App() {
       cacheIssue(updated, settings.maxCachedTickets);
       refreshCacheState();
     }
+  };
+
+  const handleFilterByLabel = (label: string) => {
+    setSelectedIssue(null);
+    setActiveTab('search');
+    const labelQuery = `labels = "${label}"`;
+    setSearchQuery(labelQuery);
+    performSearch(labelQuery);
   };
 
   // Add Comment in detail view
@@ -567,6 +601,7 @@ export default function App() {
         onAddComment={handleAddComment}
         onTogglePinTicket={handleTogglePinTicket}
         onToggleWatchTicket={handleToggleWatchTicket}
+        onFilterByLabel={handleFilterByLabel}
         jiraUrl={settings.jiraUrl}
       />
 

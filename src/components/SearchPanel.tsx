@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ExtensionSettings, SearchHistoryItem } from '../types';
-import { Search, X, Filter, Code, Clock, ArrowRight, Zap, HelpCircle, UserCheck, Pin, Mic, MicOff } from 'lucide-react';
+import { Search, X, Filter, Code, Clock, ArrowRight, Zap, HelpCircle, UserCheck, Pin, Mic, MicOff, Copy, Check } from 'lucide-react';
 import { JqlHelperModal } from './JqlHelperModal';
 
 interface SearchPanelProps {
@@ -28,6 +28,14 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   const [showJqlHelp, setShowJqlHelp] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [copiedSugLabel, setCopiedSugLabel] = useState<string | null>(null);
+
+  const handleCopySuggestionJql = (label: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(label);
+    setCopiedSugLabel(label);
+    setTimeout(() => setCopiedSugLabel(null), 2000);
+  };
 
   const startVoiceSearch = () => {
     setSpeechError(null);
@@ -298,6 +306,18 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 shrink-0">
                   <span>{sug.meta}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopySuggestionJql(sug.label, e)}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 hover:text-blue-600 transition-colors"
+                    title="Copy JQL string to clipboard"
+                  >
+                    {copiedSugLabel === sug.label ? (
+                      <Check className="w-3 h-3 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-slate-400 hover:text-blue-600" />
+                    )}
+                  </button>
                   <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 transition-colors" />
                 </div>
               </button>

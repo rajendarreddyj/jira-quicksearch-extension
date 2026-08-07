@@ -7,6 +7,7 @@ export const INITIAL_SETTINGS: ExtensionSettings = {
   apiToken: '',
   maxCachedTickets: 20,
   autoCacheOnSearch: true,
+  enableAutoRefresh: true,
   viewMode: 'popup',
   isSimulatedOffline: false,
   theme: 'light',
@@ -30,6 +31,14 @@ export const MOCK_ISSUES: JiraIssue[] = [
     storyPoints: 5,
     fixVersion: 'v2.4.0',
     url: 'https://acme-inc.atlassian.net/browse/PROJ-101',
+    timeTracking: {
+      originalEstimateSeconds: 86400, // 3d (24h)
+      timeSpentSeconds: 57600, // 2d (16h)
+      remainingEstimateSeconds: 28800, // 1d (8h)
+      originalEstimateText: '3d',
+      timeSpentText: '2d',
+      remainingEstimateText: '1d',
+    },
     statusTime: [
       { statusName: 'To Do', category: 'to-do', hours: 18 },
       { statusName: 'In Progress', category: 'in-progress', hours: 32 },
@@ -61,6 +70,14 @@ export const MOCK_ISSUES: JiraIssue[] = [
     storyPoints: 8,
     fixVersion: 'v2.5.0',
     url: 'https://acme-inc.atlassian.net/browse/PROJ-102',
+    timeTracking: {
+      originalEstimateSeconds: 144000, // 5d
+      timeSpentSeconds: 36000, // 1d 2h
+      remainingEstimateSeconds: 108000, // 3d 6h
+      originalEstimateText: '5d',
+      timeSpentText: '1d 2h',
+      remainingEstimateText: '3d 6h',
+    },
     statusTime: [
       { statusName: 'To Do', category: 'to-do', hours: 96 },
     ],
