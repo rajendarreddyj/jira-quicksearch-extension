@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ExtensionSettings, SearchHistoryItem } from '../types';
-import { Search, X, Filter, Code, Clock, ArrowRight, Zap, HelpCircle, UserCheck, Pin } from 'lucide-react';
+import { Search, X, Filter, Code, Clock, ArrowRight, Zap, HelpCircle, UserCheck, Pin, Mic, MicOff } from 'lucide-react';
 
 interface SearchPanelProps {
   searchQuery: string;
@@ -25,10 +25,99 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
 }) => {
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [showJqlHelp, setShowJqlHelp] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
+  const startVoiceSearch = () => {
+    setSpeechError(null);
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechError('Speech recognition is not supported in this browser.');
+      setTimeout(() => setSpeechError(null), 3000);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (transcript) {
+          setSearchQuery(transcript);
+          onSearchSubmit(transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setSpeechError(`Voice input error: ${event.error}`);
+        setIsListening(false);
+        setTimeout(() => setSpeechError(null), 3000);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setSpeechError('Microphone access blocked or unavailable.');
+      setIsListening(false);
+      setTimeout(() => setSpeechError(null), 3000);
+    }
+  };
 
   const availableProjects = settings.projectKey
     ? settings.projectKey.split(',').map(p => p.trim()).filter(Boolean)
     : [];
+
+  // JQL Auto-complete suggestions library
+  const defaultJqlSuggestions = [
+    `project = "${availableProjects[0] || 'PROJ'}"`,
+    'assignee = currentUser()',
+    'status = "In Progress"',
+    'status = "To Do"',
+    'status = "Done"',
+    'priority = "High"',
+    'priority = "Highest"',
+    'updated >= -7d',
+    'created >= -30d',
+    'order by created DESC',
+    'text ~ "bug"',
+    'summary ~ "fix"',
+  ];
+
+  // Dynamic suggestion list based on user input and history
+  const activeSuggestions = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+
+    // 1. History matches
+    const historyMatches = searchHistory
+      .filter(h => h.query.toLowerCase().includes(q) && h.query.toLowerCase() !== q)
+      .map(h => ({ type: 'history' as const, label: h.query, meta: `${h.resultCount} results` }));
+
+    // 2. JQL syntax matches
+    const jqlMatches = defaultJqlSuggestions
+      .filter(s => s.toLowerCase().includes(q) && s.toLowerCase() !== q)
+      .map(s => ({ type: 'jql' as const, label: s, meta: 'JQL Syntax' }));
+
+    // 3. Project key prefix matches (e.g. "PROJ-")
+    const pKeyMatches = availableProjects
+      .filter(pk => pk.toLowerCase().includes(q))
+      .map(pk => ({ type: 'project' as const, label: `project = "${pk}"`, meta: 'Project Filter' }));
+
+    return [...historyMatches, ...pKeyMatches, ...jqlMatches].slice(0, 8);
+  }, [searchQuery, searchHistory, availableProjects]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -65,8 +154,26 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             className="w-full pl-9 pr-28 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner"
           />
 
-          {/* Right Action Icons & Shortcut badge */}
+          {/* Right Action Icons & Voice Search & Shortcut badge */}
           <div className="absolute right-2 flex items-center gap-1.5">
+            {/* Voice Search Button */}
+            <button
+              type="button"
+              onClick={startVoiceSearch}
+              className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+                isListening
+                  ? 'bg-rose-600 text-white animate-pulse shadow-md ring-2 ring-rose-400'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+              title={isListening ? 'Listening for voice input...' : 'Click to trigger Voice Search (Web Speech API)'}
+            >
+              {isListening ? (
+                <MicOff className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Mic className="w-3.5 h-3.5 text-blue-600" />
+              )}
+            </button>
+
             <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold font-mono bg-slate-200 text-slate-600 border border-slate-300 rounded shadow-2xs">
               ⌘K
             </kbd>
@@ -95,6 +202,23 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Voice Search Feedback / Error Banner */}
+        {isListening && (
+          <div className="mt-1 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs font-medium text-rose-700 flex items-center gap-2 animate-in fade-in">
+            <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+            <span>Listening to voice query... Speak now (e.g. &quot;assigned to me&quot; or &quot;PROJ-101&quot;)</span>
+          </div>
+        )}
+
+        {speechError && (
+          <div className="mt-1 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center justify-between animate-in fade-in">
+            <span>{speechError}</span>
+            <button onClick={() => setSpeechError(null)} className="text-amber-600 hover:text-amber-900">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Quick History Dropdown */}
         {showHistoryDropdown && searchHistory.length > 0 && !searchQuery && (
@@ -130,6 +254,49 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 shrink-0">
                   <span>{item.resultCount} results</span>
+                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Live Search Suggestions Dropdown */}
+        {activeSuggestions.length > 0 && searchQuery.trim().length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-xl z-20 py-1 max-h-60 overflow-y-auto animate-in fade-in duration-150">
+            <div className="px-3 py-1 text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center justify-between border-b border-blue-100 bg-blue-50/50">
+              <span className="flex items-center gap-1">
+                <Zap className="w-3 h-3 text-blue-600" />
+                JQL & History Auto-Complete Suggestions
+              </span>
+              <span className="text-[9px] text-slate-400 font-normal">Click or press Tab</span>
+            </div>
+            {activeSuggestions.map((sug, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  setSearchQuery(sug.label);
+                  onSearchSubmit(sug.label);
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-blue-50 flex items-center justify-between group transition-colors border-b border-slate-50 last:border-none"
+              >
+                <div className="flex items-center gap-2 truncate pr-2">
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                      sug.type === 'history'
+                        ? 'bg-purple-100 text-purple-700'
+                        : sug.type === 'project'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {sug.type === 'history' ? 'History' : sug.type === 'project' ? 'Project' : 'JQL'}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-800 truncate">{sug.label}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 shrink-0">
+                  <span>{sug.meta}</span>
                   <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 transition-colors" />
                 </div>
               </button>

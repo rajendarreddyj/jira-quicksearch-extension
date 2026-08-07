@@ -35,6 +35,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { IssueDetailModal } from './components/IssueDetailModal';
 import { ExtensionManifestModal } from './components/ExtensionManifestModal';
 import { CiCdArchitectureModal } from './components/CiCdArchitectureModal';
+import { ActivityDashboard } from './components/ActivityDashboard';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 export default function App() {
   const [settings, setSettings] = useState<ExtensionSettings>(loadSettings);
@@ -52,10 +54,14 @@ export default function App() {
   const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
   const [showManifestModal, setShowManifestModal] = useState(false);
   const [showCiCdModal, setShowCiCdModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
-  // Global Keyboard Shortcut: Cmd+K / Ctrl+K to instantly focus search input
+  // Global Keyboard Shortcut: Cmd+K / Ctrl+K to focus search input, and ? for Shortcuts modal
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = targetTag === 'input' || targetTag === 'textarea';
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setActiveTab('search');
@@ -66,6 +72,9 @@ export default function App() {
             (searchInput as HTMLInputElement).select();
           }
         }, 50);
+      } else if (!isInput && e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal(prev => !prev);
       }
     };
 
@@ -258,6 +267,27 @@ export default function App() {
     setHistory([]);
   };
 
+  // Manual Sync & Refresh Handler for local cache
+  const handleSyncAndRefresh = async () => {
+    setIsSearching(true);
+    try {
+      const res = await executeJiraSearch(searchQuery, settings);
+      setSearchResults(res.issues);
+      setIsOfflineResult(res.isOfflineResult);
+      if (res.issues.length > 0) {
+        const updatedCache = cacheMultipleIssues(res.issues, settings.maxCachedTickets);
+        setCachedIssues(updatedCache);
+      } else {
+        setCachedIssues(getCachedIssues());
+      }
+      refreshCacheState();
+    } catch (err) {
+      console.error('Manual sync failed:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   // Cache handlers
   const handleRemoveFromCache = (key: string) => {
     const updated = removeCachedIssue(key);
@@ -304,6 +334,7 @@ export default function App() {
           onUpdateSettings={handleSaveSettings}
           onOpenManifestModal={() => setShowManifestModal(true)}
           onOpenCiCdModal={() => setShowCiCdModal(true)}
+          onOpenShortcutsModal={() => setShowShortcutsModal(true)}
           cachedCount={cachedIssues.length}
           historyCount={history.length}
         />
@@ -363,6 +394,15 @@ export default function App() {
               onRemoveFromCache={handleRemoveFromCache}
               onClearAllCache={handleClearCache}
               onUpdateSettings={handleSaveSettings}
+              onSyncAndRefresh={handleSyncAndRefresh}
+            />
+          )}
+
+          {/* ACTIVITY DASHBOARD TAB */}
+          {activeTab === 'activity' && (
+            <ActivityDashboard
+              issues={searchResults.length > 0 ? searchResults : cachedIssues}
+              onSelectIssue={handleSelectIssue}
             />
           )}
 
@@ -416,6 +456,13 @@ export default function App() {
       {showCiCdModal && (
         <CiCdArchitectureModal
           onClose={() => setShowCiCdModal(false)}
+        />
+      )}
+
+      {/* Keyboard Shortcuts Cheat Sheet Modal */}
+      {showShortcutsModal && (
+        <KeyboardShortcutsModal
+          onClose={() => setShowShortcutsModal(false)}
         />
       )}
     </div>

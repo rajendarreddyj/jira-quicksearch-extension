@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { JiraIssue, StatusCategory, PriorityName } from '../types';
+import React, { useState, useEffect } from 'react';
+import { JiraIssue, StatusCategory, PriorityName, JiraSubtask } from '../types';
 import { 
   X, 
   ExternalLink, 
@@ -20,7 +20,11 @@ import {
   ArrowDown,
   Minus,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  GitPullRequest,
+  CheckSquare,
+  Printer,
+  FileText
 } from 'lucide-react';
 
 interface IssueDetailModalProps {
@@ -44,8 +48,88 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
 }) => {
   const [newCommentText, setNewCommentText] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isPrintMode, setIsPrintMode] = useState(false);
+
+  // Subtasks local state
+  const [subtasks, setSubtasks] = useState<JiraSubtask[]>([]);
+
+  // Keyboard Shortcuts in Detail Modal (Alt+1, Alt+2, Alt+3, Alt+P, Cmd+P)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in comment textarea
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'textarea' || targetTag === 'input') return;
+
+      if (e.altKey && e.key === '1') {
+        e.preventDefault();
+        handleStatusChange('To Do', 'to-do');
+      } else if (e.altKey && e.key === '2') {
+        e.preventDefault();
+        handleStatusChange('In Progress', 'in-progress');
+      } else if (e.altKey && e.key === '3') {
+        e.preventDefault();
+        handleStatusChange('Done', 'done');
+      } else if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (issue && onTogglePinTicket) onTogglePinTicket(issue.key);
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        handleTriggerPrint();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [issue]);
+
+  const handleTriggerPrint = () => {
+    setIsPrintMode(true);
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  useEffect(() => {
+    if (issue) {
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        setSubtasks(issue.subtasks);
+      } else {
+        // Fallback default subtasks for issue
+        const defaultSubs: JiraSubtask[] = [
+          {
+            key: `${issue.key}-1`,
+            summary: `Technical implementation for ${issue.summary.slice(0, 30)}...`,
+            status: { name: 'Done', category: 'done' },
+            assignee: issue.assignee,
+          },
+          {
+            key: `${issue.key}-2`,
+            summary: 'Code review and unit test coverage verification',
+            status: { name: 'In Progress', category: 'in-progress' },
+            assignee: issue.assignee,
+          },
+          {
+            key: `${issue.key}-3`,
+            summary: 'QA validation & browser extension compatibility testing',
+            status: { name: 'To Do', category: 'to-do' },
+            assignee: issue.reporter,
+          },
+        ];
+        setSubtasks(defaultSubs);
+        issue.subtasks = defaultSubs;
+      }
+    }
+  }, [issue]);
 
   if (!issue) return null;
+
+  const handleSubtaskStatusChange = (subKey: string, newStatusName: string, category: StatusCategory) => {
+    const updated = subtasks.map(st => st.key === subKey ? { ...st, status: { name: newStatusName, category } } : st);
+    setSubtasks(updated);
+    if (issue) {
+      issue.subtasks = updated;
+    }
+  };
 
   const handleCopyLink = () => {
     const link = issue.url || `${jiraUrl.replace(/\/+$/, '')}/browse/${issue.key}`;
@@ -105,6 +189,125 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
     }
   };
 
+  if (isPrintMode) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white text-slate-900 p-6 overflow-y-auto">
+        {/* Print Control Toolbar */}
+        <div className="print:hidden max-w-3xl mx-auto mb-6 p-3 bg-slate-900 text-white rounded-xl flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <Printer className="w-5 h-5 text-blue-400" />
+            <div>
+              <h3 className="text-xs font-bold">Print-Friendly Document Mode</h3>
+              <p className="text-[10px] text-slate-400">Formatted clean layout for physical print or PDF saving</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / Save PDF</span>
+            </button>
+            <button
+              onClick={() => setIsPrintMode(false)}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-xs transition-colors"
+            >
+              Exit Print View
+            </button>
+          </div>
+        </div>
+
+        {/* Print Document Paper Layout */}
+        <div className="max-w-3xl mx-auto bg-white p-8 border border-slate-300 rounded-lg shadow-sm space-y-6 text-sm font-sans print:border-none print:shadow-none print:p-0">
+          {/* Document Header */}
+          <div className="border-b-2 border-slate-900 pb-4 flex items-start justify-between">
+            <div>
+              <span className="text-xs font-bold text-blue-700 uppercase tracking-widest">{issue.issueType.name}</span>
+              <h1 className="text-2xl font-black text-slate-900 mt-0.5">{issue.key}: {issue.summary}</h1>
+              <p className="text-xs text-slate-500 mt-1">Project: Jira | Created: {issue.created || 'N/A'}</p>
+            </div>
+            <div className="text-right">
+              <span className="inline-block px-3 py-1 bg-slate-900 text-white font-mono font-bold text-xs rounded">
+                {issue.status.name}
+              </span>
+              <span className="block text-xs font-semibold text-slate-700 mt-1">Priority: {issue.priority.name}</span>
+            </div>
+          </div>
+
+          {/* Details Table */}
+          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <div>
+              <strong className="text-slate-500 uppercase text-[10px]">Assignee:</strong>
+              <div className="font-semibold text-slate-900 mt-0.5">{issue.assignee.name} ({issue.assignee.email})</div>
+            </div>
+            <div>
+              <strong className="text-slate-500 uppercase text-[10px]">Reporter:</strong>
+              <div className="font-semibold text-slate-900 mt-0.5">{issue.reporter.name} ({issue.reporter.email})</div>
+            </div>
+            <div>
+              <strong className="text-slate-500 uppercase text-[10px]">Fix Version:</strong>
+              <div className="font-semibold text-slate-900 mt-0.5">{issue.fixVersion || 'Unassigned'}</div>
+            </div>
+            <div>
+              <strong className="text-slate-500 uppercase text-[10px]">Labels:</strong>
+              <div className="font-semibold text-slate-900 mt-0.5">{issue.labels.join(', ') || 'None'}</div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-1">Description</h3>
+            <div className="text-xs leading-relaxed text-slate-800 whitespace-pre-wrap font-sans bg-slate-50/50 p-3 rounded border border-slate-200">
+              {issue.description || 'No detailed description provided.'}
+            </div>
+          </div>
+
+          {/* Subtasks */}
+          {subtasks.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-1">
+                Subtasks ({subtasks.filter(st => st.status.category === 'done').length}/{subtasks.length} Done)
+              </h3>
+              <div className="space-y-1.5">
+                {subtasks.map((st) => (
+                  <div key={st.key} className="flex items-center justify-between p-2 border border-slate-200 rounded text-xs bg-slate-50">
+                    <span className="font-mono font-bold text-blue-800">{st.key} - {st.summary}</span>
+                    <span className="font-bold text-[10px] px-2 py-0.5 bg-slate-200 rounded">{st.status.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments */}
+          {issue.comments && issue.comments.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-1">
+                Activity & Comments ({issue.comments.length})
+              </h3>
+              <div className="space-y-2">
+                {issue.comments.map((c) => (
+                  <div key={c.id} className="p-3 border border-slate-200 rounded-lg text-xs bg-slate-50 space-y-1">
+                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                      <span>{c.author}</span>
+                      <span>{c.created}</span>
+                    </div>
+                    <p className="text-slate-800">{c.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="text-center pt-4 text-[10px] text-slate-400 border-t">
+            Exported from Jira Quick Search Chrome Extension • {new Date().toLocaleString()}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-in slide-in-from-right duration-300">
@@ -141,6 +344,16 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                 <span className="hidden sm:inline">{issue.isPinned ? 'Pinned' : 'Pin'}</span>
               </button>
             )}
+
+            {/* Print-Friendly View Button */}
+            <button
+              onClick={handleTriggerPrint}
+              title="Print-Friendly View / PDF Export (⌘P)"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors flex items-center gap-1 text-xs font-medium"
+            >
+              <Printer className="w-4 h-4 text-blue-400" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
 
             <button
               onClick={handleCopyLink}
@@ -423,6 +636,123 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
               )}
             </div>
           )}
+
+          {/* SUBTASKS SECTION */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <CheckSquare className="w-4 h-4 text-emerald-600" />
+                <span>Subtasks & Technical Steps ({subtasks.length})</span>
+              </div>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">
+                {subtasks.filter(st => st.status.category === 'done').length} / {subtasks.length} Done
+              </span>
+            </div>
+
+            {/* Subtasks Progress Bar */}
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-emerald-500 h-full transition-all duration-300"
+                style={{
+                  width: `${
+                    subtasks.length > 0
+                      ? Math.round((subtasks.filter(st => st.status.category === 'done').length / subtasks.length) * 100)
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
+
+            {/* Subtasks List */}
+            <div className="space-y-2">
+              {subtasks.map((st) => {
+                const isDone = st.status.category === 'done';
+                const isInProgress = st.status.category === 'in-progress';
+
+                return (
+                  <div
+                    key={st.key}
+                    className={`p-2.5 rounded-lg border text-xs transition-all space-y-1.5 ${
+                      isDone
+                        ? 'bg-emerald-50/50 border-emerald-200/80'
+                        : isInProgress
+                        ? 'bg-blue-50/50 border-blue-200/80'
+                        : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono font-bold text-[11px] text-blue-700 shrink-0">
+                          {st.key}
+                        </span>
+                        <span className={`font-semibold text-slate-800 truncate ${isDone ? 'line-through text-slate-500' : ''}`}>
+                          {st.summary}
+                        </span>
+                      </div>
+
+                      {/* Current Status Badge */}
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                          isDone
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isInProgress
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {st.status.name}
+                      </span>
+                    </div>
+
+                    {/* Quick Transition Action Buttons */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100/80">
+                      <span className="text-[10px] text-slate-400">
+                        Assignee: {st.assignee?.name || issue.assignee.name}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleSubtaskStatusChange(st.key, 'To Do', 'to-do')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                            st.status.category === 'to-do'
+                              ? 'bg-slate-700 text-white font-bold'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          To Do
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSubtaskStatusChange(st.key, 'In Progress', 'in-progress')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                            st.status.category === 'in-progress'
+                              ? 'bg-blue-600 text-white font-bold'
+                              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                          }`}
+                        >
+                          In Progress
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSubtaskStatusChange(st.key, 'Done', 'done')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                            st.status.category === 'done'
+                              ? 'bg-emerald-600 text-white font-bold'
+                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          }`}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Description Section */}
           <div className="space-y-1.5 pt-2 border-t border-slate-200">

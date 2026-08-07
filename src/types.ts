@@ -38,6 +38,13 @@ export interface StatusDuration {
   hours: number;
 }
 
+export interface JiraSubtask {
+  key: string;
+  summary: string;
+  status: JiraStatus;
+  assignee?: JiraUser;
+}
+
 export interface JiraIssue {
   key: string;
   summary: string;
@@ -59,6 +66,7 @@ export interface JiraIssue {
   fixVersion?: string;
   statusTime?: StatusDuration[];
   isPinned?: boolean;
+  subtasks?: JiraSubtask[];
 }
 
 export interface SearchHistoryItem {
@@ -92,4 +100,4 @@ export interface CacheStats {
   newestTicketDate?: string;
 }
 
-export type ActiveTab = 'search' | 'history' | 'cached' | 'settings';
+export type ActiveTab = 'search' | 'history' | 'cached' | 'activity' | 'settings';

@@ -35,6 +35,7 @@ interface CachedTicketsManagerProps {
   onRemoveFromCache: (key: string) => void;
   onClearAllCache: () => void;
   onUpdateSettings: (newSettings: ExtensionSettings) => void;
+  onSyncAndRefresh?: () => Promise<void> | void;
 }
 
 export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
@@ -45,8 +46,26 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
   onRemoveFromCache,
   onClearAllCache,
   onUpdateSettings,
+  onSyncAndRefresh,
 }) => {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  const handleSyncClick = async () => {
+    if (!onSyncAndRefresh) return;
+    setIsSyncing(true);
+    setSyncStatusMsg(null);
+    try {
+      await onSyncAndRefresh();
+      setSyncStatusMsg('Sync complete! Local cache updated with latest server state.');
+    } catch (err) {
+      setSyncStatusMsg('Sync failed or completed with offline fallback.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncStatusMsg(null), 4000);
+    }
+  };
 
   const percentageUsed = Math.min(100, Math.round((cacheStats.totalCached / cacheStats.maxLimit) * 100));
 
@@ -135,17 +154,40 @@ export const CachedTicketsManager: React.FC<CachedTicketsManagerProps> = ({
             </div>
           </div>
 
-          {/* Auto Cache Toggle Switch */}
-          <label className="flex items-center gap-1.5 cursor-pointer bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
-            <input
-              type="checkbox"
-              checked={settings.autoCacheOnSearch}
-              onChange={(e) => onUpdateSettings({ ...settings, autoCacheOnSearch: e.target.checked })}
-              className="w-3 h-3 text-blue-600 rounded focus:ring-0 accent-blue-500 cursor-pointer"
-            />
-            <span className="text-[10px] font-medium text-slate-300">Auto-Cache</span>
-          </label>
+          {/* Sync & Refresh Button & Auto Cache Toggle */}
+          <div className="flex items-center gap-2">
+            {onSyncAndRefresh && (
+              <button
+                type="button"
+                onClick={handleSyncClick}
+                disabled={isSyncing}
+                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs border border-blue-500 disabled:opacity-50"
+                title="Explicitly re-fetch and overwrite local cached data with latest server state"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync & Refresh'}</span>
+              </button>
+            )}
+
+            {/* Auto Cache Toggle Switch */}
+            <label className="flex items-center gap-1.5 cursor-pointer bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+              <input
+                type="checkbox"
+                checked={settings.autoCacheOnSearch}
+                onChange={(e) => onUpdateSettings({ ...settings, autoCacheOnSearch: e.target.checked })}
+                className="w-3 h-3 text-blue-600 rounded focus:ring-0 accent-blue-500 cursor-pointer"
+              />
+              <span className="text-[10px] font-medium text-slate-300">Auto-Cache</span>
+            </label>
+          </div>
         </div>
+
+        {syncStatusMsg && (
+          <div className="p-2 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-lg text-xs font-medium flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{syncStatusMsg}</span>
+          </div>
+        )}
 
         {/* Storage Bar Gauge */}
         <div className="space-y-1">

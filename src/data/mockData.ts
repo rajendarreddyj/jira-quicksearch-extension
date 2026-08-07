@@ -39,6 +39,11 @@ export const MOCK_ISSUES: JiraIssue[] = [
       { id: 'c1', author: 'Alex Rivera', body: 'Reproduced on Chrome 127 with fast network throttling.', created: '2026-08-04T10:00:00Z' },
       { id: 'c2', author: 'Sarah Jenkins', body: 'Added RxJS / custom hook debounce fix. Testing offline fallback behavior.', created: '2026-08-05T16:20:00Z' },
     ],
+    subtasks: [
+      { key: 'PROJ-101-1', summary: 'Add AbortController support to search request hook', status: { name: 'Done', category: 'done' } },
+      { key: 'PROJ-101-2', summary: 'Unit test fast consecutive keystroke cancellation', status: { name: 'In Progress', category: 'in-progress' } },
+      { key: 'PROJ-101-3', summary: 'Verify cache state integrity after cancelled request', status: { name: 'To Do', category: 'to-do' } },
+    ],
   },
   {
     key: 'PROJ-102',
@@ -61,6 +66,10 @@ export const MOCK_ISSUES: JiraIssue[] = [
     ],
     comments: [
       { id: 'c3', author: 'Marcus Vance', body: 'Drafted schema. Will fall back to localStorage gracefully if IndexedDB is blocked in private browsing tabs.', created: '2026-08-03T14:05:00Z' }
+    ],
+    subtasks: [
+      { key: 'PROJ-102-1', summary: 'Design IndexedDB object store schema and migrations', status: { name: 'In Progress', category: 'in-progress' } },
+      { key: 'PROJ-102-2', summary: 'Fallback mechanism for private browsing storage restrictions', status: { name: 'To Do', category: 'to-do' } }
     ],
   },
   {

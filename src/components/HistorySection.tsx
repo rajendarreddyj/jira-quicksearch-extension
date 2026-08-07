@@ -1,6 +1,6 @@
 import React from 'react';
 import { SearchHistoryItem } from '../types';
-import { History, Pin, Trash2, ArrowRight, Search, Clock, Check } from 'lucide-react';
+import { History, Pin, Trash2, ArrowRight, Search, Clock, Check, Download } from 'lucide-react';
 
 interface HistorySectionProps {
   history: SearchHistoryItem[];
@@ -18,6 +18,20 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
   onClearAllHistory,
 }) => {
   const [confirmClear, setConfirmClear] = React.useState(false);
+
+  const handleDownloadHistoryJSON = () => {
+    if (history.length === 0) return;
+    const jsonStr = JSON.stringify(history, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `jira_search_history_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const formatTime = (isoString: string) => {
     try {
@@ -60,33 +74,46 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
           <p className="text-[11px] text-slate-500">Quickly re-execute frequent JQL searches or ticket lookups</p>
         </div>
 
-        {confirmClear ? (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                onClearAllHistory();
-                setConfirmClear(false);
-              }}
-              className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded transition-colors"
-            >
-              Confirm Clear
-            </button>
-            <button
-              onClick={() => setConfirmClear(false)}
-              className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-medium rounded hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
+        <div className="flex items-center gap-2">
+          {/* Download History Button */}
           <button
-            onClick={() => setConfirmClear(true)}
-            className="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 rounded transition-colors"
+            type="button"
+            onClick={handleDownloadHistoryJSON}
+            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 shadow-xs"
+            title="Export search query history to a JSON file"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear History</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Download History</span>
           </button>
-        )}
+
+          {confirmClear ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  onClearAllHistory();
+                  setConfirmClear(false);
+                }}
+                className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded transition-colors"
+              >
+                Confirm Clear
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-medium rounded hover:bg-slate-300"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 rounded transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Clear History</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Pinned Queries Section */}
