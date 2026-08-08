@@ -19,7 +19,8 @@ import {
   Square,
   Trash2,
   ListFilter,
-  ArrowUpDown
+  ArrowUpDown,
+  ExternalLink
 } from 'lucide-react';
 
 interface IssueListProps {
@@ -371,6 +372,19 @@ export const IssueList: React.FC<IssueListProps> = ({
     }
   };
 
+  const handleOpenIssueInNewTab = (issue: JiraIssue, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetUrl = issue.url;
+    if (!targetUrl) return;
+
+    if (typeof window !== 'undefined' && (window as any).chrome?.tabs?.create) {
+      (window as any).chrome.tabs.create({ url: targetUrl });
+      return;
+    }
+
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="space-y-2 p-3">
       {/* Recently Viewed Section (Last 5 Opened Tickets) */}
@@ -637,6 +651,16 @@ export const IssueList: React.FC<IssueListProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenIssueInNewTab(issue, e)}
+                        className="p-1 rounded-md transition-all cursor-pointer text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800"
+                        title="Open issue in new tab"
+                        aria-label={`Open ${issue.key} in new tab`}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+
                       {/* Pin Ticket Action Toggle */}
                       {onTogglePinTicket && (
                         <button
