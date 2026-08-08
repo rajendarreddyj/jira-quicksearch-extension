@@ -1,5 +1,5 @@
 {
-  "name": "Jira Quick Search Chrome Extension",
+  "name": "Jira Quick Search",
   "description": "Chrome extension tool for fast Jira project search, search query history, offline ticket details caching, and custom settings.",
   "requestFramePermissions": [],
   "majorCapabilities": []

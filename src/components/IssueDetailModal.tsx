@@ -422,7 +422,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           )}
 
           <div className="text-center pt-4 text-[10px] text-slate-400 border-t">
-            Exported from Jira Quick Search Chrome Extension • {new Date().toLocaleString()}
+            Exported from Jira Quick Search • {new Date().toLocaleString()}
           </div>
         </div>
       </div>

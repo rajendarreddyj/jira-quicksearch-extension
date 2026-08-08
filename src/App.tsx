@@ -687,7 +687,7 @@ export default function App() {
         <footer className="p-2.5 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[10px] flex items-center justify-between border-t border-slate-200 dark:border-slate-800 transition-colors">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-medium text-slate-700 dark:text-slate-300">Jira Quick Search &amp; Cache</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">Jira Quick Search</span>
             <span>•</span>
             <button
               type="button"

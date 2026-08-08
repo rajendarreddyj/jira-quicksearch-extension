@@ -1,10 +1,10 @@
-# Jira QuickSearch - Chrome Extension & Web Application
+# Jira Quick Search - Chrome Extension & Web Application
 
-![Jira QuickSearch ](./src/assets/images/extension.png)
+![Jira Quick Search](./src/assets/images/extension.png)
 
-**Jira QuickSearch** is a fast, offline-capable Chrome Extension and Web Dashboard designed for engineering teams and managers to instantly search, inspect, cache, watch, and transition Jira issues without waiting for Jira's slow web interface to load.
+**Jira Quick Search** is a fast, offline-capable Chrome Extension and Web Dashboard designed for engineering teams and managers to instantly search, inspect, cache, watch, and transition Jira issues without waiting for Jira's slow web interface to load.
 
-![Jira QuickSearch - Offline Cache View](./src/assets/images/extension_offline_cache.png)
+![Jira Quick Search - Offline Cache View](./src/assets/images/extension_offline_cache.png)
 
 ## 🖼️ Latest UI Screenshots
 
@@ -199,7 +199,7 @@ Ensure the root `dist/manifest.json` file is present (or copy from `assets/manif
 ```json
 {
   "manifest_version": 3,
-  "name": "Jira QuickSearch & Offline Cache",
+  "name": "Jira QuickSearch",
   "version": "1.0.0",
   "description": "Fast offline Jira search, ticket watching, caching, and bulk issue status management.",
   "action": {
@@ -243,7 +243,7 @@ To test the extension locally in Chrome:
 
 3. **Upload Package**: Click **New Item** in the Chrome Web Store Console and upload `jira-quicksearch-v1.0.0.zip`.
 4. **Store Listing Details**:
-   - Title: Jira QuickSearch & Offline Cache
+   - Title: Jira Quick Search
    - Short Description: Search, cache, watch, and transition Jira issues instantly.
    - Upload 128x128 icon and at least one 1280x800 screenshot.
    - Set Privacy Policy URL and Host Permissions Justification (`https://*.atlassian.net/*` for API access).

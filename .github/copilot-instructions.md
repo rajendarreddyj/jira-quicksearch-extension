@@ -1,6 +1,6 @@
-# GitHub Copilot Instructions for Jira Quick Search Chrome Extension
+# GitHub Copilot Instructions for Jira Quick Search
 
-This project is a high-performance **Jira Quick Search & Offline Caching Chrome Extension** built with **React 18**, **TypeScript**, **Tailwind CSS**, and **Vite**.
+This project is a high-performance **Jira Quick Search** Chrome Extension built with **React 18**, **TypeScript**, **Tailwind CSS**, and **Vite**.
 
 When assisting with or modifying code in this workspace, follow these architectural guidelines and coding standards:
 
