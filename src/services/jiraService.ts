@@ -2,14 +2,90 @@ import { JiraIssue, SearchHistoryItem, ExtensionSettings, CacheStats } from '../
 import { INITIAL_SETTINGS, MOCK_ISSUES, INITIAL_SEARCH_HISTORY } from '../data/mockData';
 
 const SETTINGS_KEY = 'jira_ext_settings';
+const SECURE_CREDENTIALS_KEY = 'jira_ext_secure_credentials';
 const HISTORY_KEY = 'jira_ext_history';
 const CACHED_ISSUES_KEY = 'jira_ext_cached_issues';
 const PINNED_TICKETS_KEY = 'jira_ext_pinned_tickets';
 const WATCHED_TICKETS_KEY = 'jira_ext_watched_tickets';
 const RECENTLY_VIEWED_KEY = 'jira_ext_recently_viewed';
 
+type SecureCredentials = Pick<ExtensionSettings, 'jiraUrl' | 'userEmail' | 'apiToken'>;
+
 function isExtensionRuntime(): boolean {
   return typeof window !== 'undefined' && !!(window as any).chrome?.runtime?.id;
+}
+
+function hasChromeStorageLocal(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).chrome?.storage?.local;
+}
+
+function pickSecureCredentials(settings: ExtensionSettings): SecureCredentials {
+  return {
+    jiraUrl: settings.jiraUrl || '',
+    userEmail: settings.userEmail || '',
+    apiToken: settings.apiToken || '',
+  };
+}
+
+export async function saveSecureCredentials(settings: ExtensionSettings): Promise<void> {
+  const credentials = pickSecureCredentials(settings);
+
+  if (hasChromeStorageLocal()) {
+    await new Promise<void>((resolve, reject) => {
+      (window as any).chrome.storage.local.set({ [SECURE_CREDENTIALS_KEY]: credentials }, () => {
+        const err = (window as any).chrome.runtime?.lastError;
+        if (err) {
+          reject(new Error(err.message || 'Failed to save secure credentials'));
+          return;
+        }
+        resolve();
+      });
+    });
+    return;
+  }
+
+  // Web fallback for non-extension runtime.
+  localStorage.setItem(SECURE_CREDENTIALS_KEY, JSON.stringify(credentials));
+}
+
+export async function loadSecureCredentials(): Promise<Partial<SecureCredentials>> {
+  if (hasChromeStorageLocal()) {
+    return new Promise<Partial<SecureCredentials>>((resolve, reject) => {
+      (window as any).chrome.storage.local.get([SECURE_CREDENTIALS_KEY], (result: any) => {
+        const err = (window as any).chrome.runtime?.lastError;
+        if (err) {
+          reject(new Error(err.message || 'Failed to load secure credentials'));
+          return;
+        }
+        resolve(result?.[SECURE_CREDENTIALS_KEY] || {});
+      });
+    });
+  }
+
+  try {
+    const raw = localStorage.getItem(SECURE_CREDENTIALS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function clearSecureCredentials(): Promise<void> {
+  if (hasChromeStorageLocal()) {
+    await new Promise<void>((resolve, reject) => {
+      (window as any).chrome.storage.local.remove([SECURE_CREDENTIALS_KEY], () => {
+        const err = (window as any).chrome.runtime?.lastError;
+        if (err) {
+          reject(new Error(err.message || 'Failed to clear secure credentials'));
+          return;
+        }
+        resolve();
+      });
+    });
+    return;
+  }
+
+  localStorage.removeItem(SECURE_CREDENTIALS_KEY);
 }
 
 function normalizeJiraUrl(jiraUrl: string): string {
@@ -398,7 +474,7 @@ export function loadSettings(): ExtensionSettings {
       saveSettings(defaultDark);
       return defaultDark;
     }
-    return { ...INITIAL_SETTINGS, ...JSON.parse(raw), theme: 'dark' };
+    return { ...INITIAL_SETTINGS, ...JSON.parse(raw), apiToken: '', theme: 'dark' };
   } catch (e) {
     return { ...INITIAL_SETTINGS, theme: 'dark' };
   }
@@ -406,7 +482,8 @@ export function loadSettings(): ExtensionSettings {
 
 export function saveSettings(settings: ExtensionSettings): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, theme: 'dark' }));
+    // Keep API tokens out of plain local settings persistence.
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, apiToken: '', theme: 'dark' }));
   } catch (e) {
     console.error('Failed to save settings to localStorage:', e);
   }
@@ -640,6 +717,7 @@ export function clearAllLocalData(): void {
   localStorage.removeItem(CACHED_ISSUES_KEY);
   localStorage.removeItem(HISTORY_KEY);
   localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(SECURE_CREDENTIALS_KEY);
   localStorage.removeItem(PINNED_TICKETS_KEY);
   localStorage.removeItem(WATCHED_TICKETS_KEY);
   localStorage.removeItem(RECENTLY_VIEWED_KEY);

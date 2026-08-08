@@ -11,6 +11,9 @@ import {
 import {
   loadSettings,
   saveSettings,
+  loadSecureCredentials,
+  saveSecureCredentials,
+  clearSecureCredentials,
   loadSearchHistory,
   addSearchQueryToHistory,
   togglePinHistory,
@@ -105,6 +108,30 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, [isDarkTheme]);
+
+  // Hydrate sensitive credentials from secure storage.
+  useEffect(() => {
+    let active = true;
+    loadSecureCredentials()
+      .then((secure) => {
+        if (!active) return;
+        if (!secure) return;
+        setSettings((prev) => ({
+          ...prev,
+          jiraUrl: secure.jiraUrl || prev.jiraUrl,
+          userEmail: secure.userEmail || prev.userEmail,
+          apiToken: secure.apiToken || prev.apiToken,
+          theme: 'dark',
+        }));
+      })
+      .catch((err) => {
+        console.warn('Failed to hydrate secure credentials:', err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Run Stale Data Cleanup on mount or settings change if enabled (>30 days)
   useEffect(() => {
@@ -258,6 +285,9 @@ export default function App() {
   const handleSaveSettings = (newSettings: ExtensionSettings) => {
     const forcedDarkSettings: ExtensionSettings = { ...newSettings, theme: 'dark' };
     setSettings(forcedDarkSettings);
+    saveSecureCredentials(forcedDarkSettings).catch((err) => {
+      console.warn('Failed to save secure credentials:', err);
+    });
     saveSettings(forcedDarkSettings);
     refreshCacheState();
   };
@@ -523,6 +553,9 @@ export default function App() {
   };
 
   const handleClearAllData = () => {
+    clearSecureCredentials().catch((err) => {
+      console.warn('Failed to clear secure credentials:', err);
+    });
     clearAllLocalData();
     localStorage.removeItem(LAST_SEARCH_CRITERIA_KEY);
     const defaultSet = { ...loadSettings(), theme: 'dark' as const };
@@ -550,7 +583,7 @@ export default function App() {
           isForcedFullTabView
             ? 'w-full max-w-none border-x-0'
             : settings.viewMode === 'popup'
-              ? 'mx-auto max-w-[440px] border-x'
+              ? 'mx-auto max-w-[440px] border rounded-xl overflow-hidden'
               : 'mx-auto max-w-5xl border-x'
         }`}
       >

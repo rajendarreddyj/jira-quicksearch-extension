@@ -4,14 +4,20 @@
   "version": "1.0.0",
   "description": "Search Jira tickets, keep search query history, and cache ticket details offline.",
   "icons": {
-    "16": "icons/icon16.svg",
-    "32": "icons/icon32.svg",
-    "48": "icons/icon48.svg",
-    "128": "icons/icon128.svg"
+    "16": "public/icons/icon16.png",
+    "32": "public/icons/icon32.png",
+    "48": "public/icons/icon48.png",
+    "128": "public/icons/icon128.png"
   },
   "action": {
     "default_popup": "index.html",
-    "default_title": "Jira Quick Search"
+    "default_title": "Jira Quick Search",
+    "default_icon": {
+      "16": "public/icons/icon16.png",
+      "32": "public/icons/icon32.png",
+      "48": "public/icons/icon48.png",
+      "128": "public/icons/icon128.png"
+    }
   },
   "permissions": [
     "storage",

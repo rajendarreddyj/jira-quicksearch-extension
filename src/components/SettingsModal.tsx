@@ -63,8 +63,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleExportJSON = () => {
+    const { apiToken: _excludedToken, ...safeSettings } = formData;
     const exportData = {
-      settings: formData,
+      settings: safeSettings,
+      tokenExcluded: true,
       searchHistory: loadSearchHistory(),
       cachedTicketsCount: getCachedIssues().length,
       exportedAt: new Date().toISOString(),
@@ -82,50 +84,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const content = event.target?.result as string;
-        const parsed = JSON.parse(content);
+    try {
+      const content = await file.text();
+      const parsed = JSON.parse(content);
 
-        if (parsed && typeof parsed === 'object') {
-          const newSettings = parsed.settings || parsed;
-          if (newSettings.jiraUrl !== undefined || newSettings.projectKey !== undefined) {
-            const merged: ExtensionSettings = {
-              ...formData,
-              ...newSettings,
-            };
-            setFormData(merged);
-            onSaveSettings(merged);
+      if (parsed && typeof parsed === 'object') {
+        const newSettings = parsed.settings || parsed;
+        if (newSettings.jiraUrl !== undefined || newSettings.projectKey !== undefined) {
+          const safeImportedSettings: Partial<ExtensionSettings> = { ...newSettings };
+          delete (safeImportedSettings as any).apiToken;
 
-            if (Array.isArray(parsed.searchHistory)) {
-              saveSearchHistory(parsed.searchHistory);
-            }
+          const merged: ExtensionSettings = {
+            ...formData,
+            ...safeImportedSettings,
+          };
 
-            setImportStatus({
-              success: true,
-              message: 'Settings and search history imported successfully!',
-            });
-            setTimeout(() => setImportStatus(null), 3500);
-          } else {
-            setImportStatus({
-              success: false,
-              message: 'Invalid backup format. Required settings keys missing.',
-            });
+          setFormData(merged);
+          onSaveSettings(merged);
+
+          if (Array.isArray(parsed.searchHistory)) {
+            saveSearchHistory(parsed.searchHistory);
           }
+
+          const importedWithoutToken = parsed.tokenExcluded === true;
+          setImportStatus({
+            success: true,
+            message: importedWithoutToken
+              ? 'Settings and search history imported. API token is excluded from backup; re-enter token or use OAuth.'
+              : 'Settings and search history imported. Any token fields in backup were ignored for security.',
+          });
+          setTimeout(() => setImportStatus(null), 5000);
+        } else {
+          setImportStatus({
+            success: false,
+            message: 'Invalid backup format. Required settings keys missing.',
+          });
         }
-      } catch (err) {
+      } else {
         setImportStatus({
           success: false,
-          message: 'Failed to parse JSON backup file.',
+          message: 'Invalid backup format. Expected a JSON object.',
         });
       }
-    };
-    reader.readAsText(file);
+    } catch {
+      setImportStatus({
+        success: false,
+        message: 'Failed to parse JSON backup file.',
+      });
+    }
+
     e.target.value = '';
   };
 
@@ -316,6 +327,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
+              <p className="text-[10px] text-slate-400">
+                API tokens are excluded from JSON backups and stored in extension secure storage when available.
+              </p>
+              <p className="text-[10px] text-slate-400">
+                OAuth 2.0 (Atlassian 3LO) is recommended over long-lived API tokens for stronger security.
+              </p>
             </div>
           </div>
 

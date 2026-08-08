@@ -7,8 +7,6 @@ import {
   Settings,
   Wifi,
   WifiOff,
-  Maximize2,
-  Minimize2,
   Activity,
   Keyboard,
   Bell,
@@ -38,13 +36,6 @@ export const Header: React.FC<HeaderProps> = ({
   cachedCount,
   historyCount,
 }) => {
-  const toggleViewMode = () => {
-    onUpdateSettings({
-      ...settings,
-      viewMode: settings.viewMode === 'popup' ? 'full' : 'popup',
-    });
-  };
-
   const toggleOfflineMode = () => {
     onUpdateSettings({
       ...settings,
@@ -58,9 +49,11 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800/80 text-xs">
         {/* Logo & App Title */}
         <div className="flex items-center gap-2 font-medium tracking-tight">
-          <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white shadow-sm font-bold text-xs">
-            J
-          </div>
+          <img
+            src="/icons/icon32.png"
+            alt="Jira Quick Search"
+            className="w-6 h-6 rounded-md border border-blue-900/30 shadow-sm"
+          />
           <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Jira Quick Search</span>
         </div>
 
@@ -106,19 +99,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
             <span className="hidden sm:inline">Open Tab</span>
-          </button>
-
-          {/* View Mode Toggle (Popup vs Full Width) */}
-          <button
-            onClick={toggleViewMode}
-            title={settings.viewMode === 'popup' ? 'Expand to Full Screen View' : 'Switch to Extension Popup View'}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-colors"
-          >
-            {settings.viewMode === 'popup' ? (
-              <Maximize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Minimize2 className="w-3.5 h-3.5" />
-            )}
           </button>
 
           {/* Pinned Ticket Updates Notification Bell */}
