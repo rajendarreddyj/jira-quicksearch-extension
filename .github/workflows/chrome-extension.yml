@@ -3,15 +3,17 @@ name: Build, Version, and Publish Chrome Extension
 on:
   push:
     branches:
-      - main  # Change this to your default branch if different
+      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build-and-test:
-    name: Build & Validate Extension
-    if: github.actor != 'github-actions[bot]'
+  build-and-tag:
+    name: Build, Bump Version, and Tag
+    if: github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +21,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ github.ref_name }}
+
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
@@ -56,9 +58,7 @@ jobs:
         run: |
           git config --local user.name "GitHub Actions"
           git config --local user.email "actions@github.com"
-          git add manifest.json
-          git add package.json
-          git add package-lock.json
+          git add manifest.json package.json package-lock.json
           if git diff --cached --quiet; then
             echo "No version changes to commit."
           else
@@ -66,80 +66,60 @@ jobs:
             git push origin HEAD:${{ github.ref_name }}
           fi
 
-      - name: Push tags
+      - name: Create and push release tag
         run: |
-          git tag v${{ env.new_version }}
-          git push origin v${{ env.new_version }}
+          git tag v${{ steps.update_version.outputs.new_version }}
+          git push origin v${{ steps.update_version.outputs.new_version }}
 
-      - name: Install dependencies
-        run: |
-          npm ci  # Adjust if you have specific dependencies  - future
-
-      - name: Lint Codebase
-        run: npm run lint || true
-
-      - name: Build Chrome extension
-        run: npm run build  # Adjust this command based on your build setup - future
-
-      - name: Zip the extension (excluding .github folder)
-        run: |
-          new_version=${{ env.new_version }}
-          zip -r "extension-${new_version}.zip" * -x ".github/*"  # Exclude .github folder
-
-      - name: Upload extension artifact with version
-        uses: actions/upload-artifact@v7
-        with:
-          name: "jira-search-chrome-extension-${{ env.new_version }}"
-          path: "extension-${{ env.new_version }}.zip"
-
-      # Optional: Publish the extension to the Chrome Web Store
-      # Uncomment and configure if needed
-      # - name: Publish to Chrome Web Store
-      #   uses: your-action-to-publish
-      #   with:
-      #     api_key: ${{ secrets.CHROME_API_KEY }}
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ env.new_version }}
-          name: "Release v${{ env.new_version }}"
-          body: |
-            Updated Chrome extension to version ${{ env.new_version }}.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   publish-to-chrome-web-store:
     name: Publish to Chrome Web Store & GitHub Release
-    needs: build-and-test
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Codebase
+      - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v8
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
-          name: jira-search-chrome-extension-${{ env.new_version }}
-          path: build-artifact
+          node-version: '24'
+          cache: 'npm'
 
-      - name: Create GitHub Release
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Chrome extension
+        run: npm run build
+
+      - name: Create extension package zip
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          cd dist
+          zip -r "../jira-search-chrome-extension-${TAG}.zip" .
+
+      - name: Upload extension artifact with version
+        uses: actions/upload-artifact@v7
+        with:
+          name: jira-search-chrome-extension-${{ github.ref_name }}
+          path: jira-search-chrome-extension-${{ github.ref_name }}.zip
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          files: build-artifact/extension-${{ env.new_version }}.zip
-          draft: false
-          prerelease: false
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: jira-search-chrome-extension-${{ github.ref_name }}.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload & Publish to Chrome Web Store
-        uses: chrome-stats/jira-search-chrome-extension-upload@v2
+        uses: chrome-stats/chrome-extension-upload@v2
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          file-path: build-artifact/extension-${{ env.new_version }}.zip
+          file-path: jira-search-chrome-extension-${{ github.ref_name }}.zip
           publish: true

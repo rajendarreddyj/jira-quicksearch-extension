@@ -1,10 +1,32 @@
 # Jira QuickSearch - Chrome Extension & Web Application
 
-![Jira QuickSearch Banner](/src/assets/images/jira_extension_hero_1786100697598.jpg)
+![Jira QuickSearch ](./src/assets/images/extension.png)
 
 **Jira QuickSearch** is a fast, offline-capable Chrome Extension and Web Dashboard designed for engineering teams and managers to instantly search, inspect, cache, watch, and transition Jira issues without waiting for Jira's slow web interface to load.
 
-![Feature Overview](/src/assets/images/jira_extension_preview_1786100709655.jpg)
+![Jira QuickSearch - Offline Cache View](./src/assets/images/extension_offline_cache.png)
+
+## 🖼️ Latest UI Screenshots
+
+### Search Experience
+
+![Search Experience](./src/assets/images/extension_search.png)
+
+### Activity Dashboard
+
+![Activity Dashboard](./src/assets/images/extension_activity.png)
+
+### Offline Cache Manager
+
+![Offline Cache Manager](./src/assets/images/extension_offline_cache.png)
+
+### Search History
+
+![Search History](./src/assets/images/estension_history.png)
+
+### Settings & Security
+
+![Settings & Security](./src/assets/images/extension_settings.png)
 
 ---
 
@@ -12,16 +34,19 @@
 
 - ⚡ **Instant Search & JQL Autocomplete**: Search by issue key (`PROJ-101`), summary, assignee, or JQL query expressions with real-time autocompletion for recent fragments, operators, and issue key prefixes.
 - 🏷️ **Quick Filter Chips**: Filter currently loaded tickets instantly by `My Issues`, `High Priority`, `In Progress`, `Done`, or `Unassigned` without triggering additional network requests.
+- 🔗 **Open in New Tab**: Open any issue directly from the search result row in a new browser tab with extension-safe `chrome.tabs.create` fallback behavior.
 - ⏱️ **Time Tracking Progress Bar**: Displays original estimate, logged time spent, and remaining hours formatted into a color-coded visual progress bar in the ticket detail modal.
-- 💾 **Smart Offline Cache & Grouping**: Cache opened tickets in `localStorage` with customizable capacity limits, cache expiration policies, CSV export, and auto-grouping by **Status** or **Project**.
+- 💾 **Smart Offline Cache & Grouping**: Cache opened tickets with configurable limits, stale-cache cleanup, CSV export, and grouping by **Status**, **Project**, or **Priority**.
+- ✅ **Auto-Cache Controlled Search Caching**: Search result caching is only active when **Auto-Cache Searched Tickets** is enabled in Settings.
 - 🔄 **15-Minute Auto-Refresh**: Background periodic auto-refresh keeps offline cached tickets synced with the latest updates on Jira Cloud.
 - 📑 **Interactive Labels & Tags**: Click any issue label tag in the detail view to instantly filter the issue list by `labels = "label_name"`.
 - 🖨️ **Print to PDF View**: Clean, print-formatted document modal tailored for physical printing or saving ticket details directly as PDF.
 - 📋 **Copy JQL String to Clipboard**: Easily copy full JQL query strings from search history with one click to reuse complex queries in Jira Cloud.
-- 📤 **Settings JSON Export / Import**: Backup, export, or restore your configuration settings and search history across multiple devices via lightweight JSON files.
+- 🔐 **Secure Credential Handling**: Jira credentials are stored in extension secure storage (`chrome.storage.local`) when available and not persisted in plain settings payloads.
+- 📤 **Settings JSON Export / Import**: Backups include settings and search history, but API token fields are always excluded/ignored for security.
 - 👁️ **Ticket Watching & Pin Alerts**: Watch and pin critical tickets to receive status change and comment update notifications.
 - 📝 **Markdown & Subtasks**: Full GitHub Flavored Markdown support for Jira descriptions and comments, plus inline subtask progress tracking.
-- 🌙 **Dark & Light Theme**: Clean, high-contrast dark theme toggle designed for comfortable viewing during night shifts.
+- 🌙 **Dark Theme Optimized UI**: Consistent dark UI shell, cards, and result states optimized for extension popup readability.
 - 🤖 **CI/CD GitHub Actions**: Includes automated workflows for linting on every commit and automated release packaging on tag creation.
 
 ---
@@ -43,8 +68,8 @@
 │ ▼ IPC / direct service calls
 
 [2] LOCAL STORAGE & CACHE ENGINE
-┌ Chrome Extension Storage Sync API (chrome.storage.local)
-├ Ticket Caching Engine (configurable limit, e.g. 50 issues)
+┌ Secure credentials in Chrome extension storage (`chrome.storage.local` when available)
+├ Ticket caching engine (configurable limit)
 ├ Cache sources: history, watched issues, settings, saved searches
 └ Offline Fallback Provider (serves cached results seamlessly)
 
@@ -52,8 +77,8 @@
 
 [3] EXTERNAL JIRA REST API INTEGRATION
 ┌ Jira Cloud REST API v3 / JQL endpoint
-├ Authentication: Basic Auth Token / API Token
-├ Background worker alarms (chrome.alarms, sync every 30m)
+├ Authentication: Jira API token (with secure local storage separation)
+├ Background refresh loop (15-minute interval)
 └ Issue operations: search, fetch details, watch, transition, comments
 
 │ ▼ CI/CD automated deployment
@@ -76,9 +101,9 @@ The repository includes pre-configured GitHub Actions workflows located in `.git
    - Triggers automatically on every `push` and `pull_request` to `main` or `master`.
    - Runs `npm run lint` to enforce code quality and TypeScript safety.
 
-2. **Release Package Workflow** (`.github/workflows/release.yml`):
-   - Triggers on tag pushes (`v*`) or manual workflow dispatch.
-   - Builds the production bundle (`npm run build`), packages the Chrome extension into a `.zip` artifact, and creates a GitHub Release.
+2. **Build + Publish Workflow** (`.github/workflows/chrome-extension.yml`):
+   - On `main` push: bumps patch version, commits version files, and pushes a `v*` tag.
+   - On tag push (`v*`): builds production output, zips **dist only**, creates GitHub release, and publishes to Chrome Web Store.
 
 ---
 
@@ -111,7 +136,13 @@ npm run build
 
 ### 0. Automatic Versioning & Release Creation
 
-When you push a git tag formatted like `v1.0.0`, GitHub Actions automatically triggers a production release build.
+Current release flow:
+
+1. Push to `main`.
+2. Workflow auto-bumps patch version and pushes a `v*` tag.
+3. Tag-triggered publish job packages `dist` and publishes.
+
+You can still trigger release manually by pushing a version tag formatted like `v1.0.0`.
 
 ```bash
 git tag -a v1.0.0 -m "Release v1.0.0"
@@ -126,6 +157,32 @@ In your GitHub repository settings under **Secrets and variables → Actions**, 
 - `CHROME_CLIENT_ID`: Google Cloud OAuth2 Client ID
 - `CHROME_CLIENT_SECRET`: Google Cloud OAuth2 Client Secret
 - `CHROME_REFRESH_TOKEN`: OAuth2 Refresh Token for Chrome Web Store API
+
+#### How to get each value
+
+1. **Get `CHROME_EXTENSION_ID`**
+   - Open [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/).
+   - Open your extension listing.
+   - Copy the **Item ID** (also visible in the listing URL).
+   - Save it as `CHROME_EXTENSION_ID` in GitHub Actions secrets.
+
+2. **Get `CHROME_CLIENT_ID` and `CHROME_CLIENT_SECRET`**
+   - Open [Google Cloud Console](https://console.cloud.google.com/).
+   - Create/select a project.
+   - Enable **Chrome Web Store API**.
+   - Configure **OAuth consent screen**.
+   - Go to **APIs & Services → Credentials** and create an **OAuth client ID**.
+   - Copy values from the created credential:
+     - Client ID → `CHROME_CLIENT_ID`
+     - Client Secret → `CHROME_CLIENT_SECRET`
+
+3. **Get `CHROME_REFRESH_TOKEN`**
+   - Generate a refresh token for the same OAuth client with Chrome Web Store API scope.
+   - Save it as `CHROME_REFRESH_TOKEN` in GitHub Actions secrets.
+
+4. **Add all four secrets to GitHub**
+   - Repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+   - Add: `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN`.
 
 ### 2. Build the Extension Bundle
 

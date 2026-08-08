@@ -517,7 +517,7 @@ export default function App() {
       const res = await executeJiraSearch(searchQuery, settings);
       setSearchResults(res.issues);
       setIsOfflineResult(res.isOfflineResult);
-      if (searchQuery.trim().length > 0 && res.issues.length > 0) {
+      if (settings.autoCacheOnSearch && searchQuery.trim().length > 0 && res.issues.length > 0) {
         const updatedCache = cacheMultipleIssues(res.issues, settings.maxCachedTickets);
         setCachedIssues(updatedCache);
       } else {
@@ -533,7 +533,7 @@ export default function App() {
 
   const handleCacheCurrentSearchResults = () => {
     const explicitSearch = searchQuery.trim().length > 0;
-    if (!explicitSearch || searchResults.length === 0) return;
+    if (!settings.autoCacheOnSearch || !explicitSearch || searchResults.length === 0) return;
     const updatedCache = cacheMultipleIssues(searchResults, settings.maxCachedTickets);
     setCachedIssues(updatedCache);
     refreshCacheState();
@@ -610,7 +610,7 @@ export default function App() {
                 setSearchQuery={setSearchQuery}
                 onSearchSubmit={(q) => performSearch(q)}
                 onCacheSearchResults={handleCacheCurrentSearchResults}
-                canCacheSearchResults={searchQuery.trim().length > 0 && searchResults.length > 0}
+                canCacheSearchResults={settings.autoCacheOnSearch && searchQuery.trim().length > 0 && searchResults.length > 0}
                 settings={settings}
                 searchHistory={history}
                 isSearching={isSearching}
