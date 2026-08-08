@@ -43,12 +43,35 @@ import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ReportIssueModal } from './components/ReportIssueModal';
 import { NotificationsModal, PinnedNotification } from './components/NotificationsModal';
 
+const LAST_SEARCH_CRITERIA_KEY = 'jira_ext_last_search_criteria';
+
+function loadLastSearchCriteria(): { query: string; selectedProject: string } {
+  try {
+    const raw = localStorage.getItem(LAST_SEARCH_CRITERIA_KEY);
+    if (!raw) return { query: '', selectedProject: 'ALL' };
+    const parsed = JSON.parse(raw);
+    return {
+      query: typeof parsed?.query === 'string' ? parsed.query : '',
+      selectedProject: typeof parsed?.selectedProject === 'string' ? parsed.selectedProject : 'ALL',
+    };
+  } catch {
+    return { query: '', selectedProject: 'ALL' };
+  }
+}
+
+function saveLastSearchCriteria(query: string, selectedProject: string): void {
+  localStorage.setItem(
+    LAST_SEARCH_CRITERIA_KEY,
+    JSON.stringify({ query, selectedProject, savedAt: new Date().toISOString() })
+  );
+}
+
 export default function App() {
-  const [settings, setSettings] = useState<ExtensionSettings>(loadSettings);
-  const [prefersSystemDark, setPrefersSystemDark] = useState<boolean>(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const lastCriteria = loadLastSearchCriteria();
+  const [settings, setSettings] = useState<ExtensionSettings>(() => ({
+    ...loadSettings(),
+    theme: 'dark',
+  }));
   const [history, setHistory] = useState<SearchHistoryItem[]>(loadSearchHistory);
   const [cachedIssues, setCachedIssues] = useState<JiraIssue[]>(getCachedIssues);
   const [cacheStats, setCacheStats] = useState<CacheStats>(() => getCacheStats(settings.maxCachedTickets));
@@ -56,8 +79,8 @@ export default function App() {
   const [watchedTicketKeys, setWatchedTicketKeys] = useState<string[]>(getWatchedTicketKeys);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('search');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProject, setSelectedProject] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState(lastCriteria.query);
+  const [selectedProject, setSelectedProject] = useState(lastCriteria.selectedProject || 'ALL');
   const [searchResults, setSearchResults] = useState<JiraIssue[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isOfflineResult, setIsOfflineResult] = useState(false);
@@ -71,29 +94,16 @@ export default function App() {
   const [notifications, setNotifications] = useState<PinnedNotification[]>([]);
   const [isCheckingPinned, setIsCheckingPinned] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = (event: MediaQueryListEvent) => setPrefersSystemDark(event.matches);
+  const isForcedFullTabView = (() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('view') === 'full';
+  })();
 
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', onChange);
-      return () => mediaQuery.removeEventListener('change', onChange);
-    }
-
-    mediaQuery.addListener(onChange);
-    return () => mediaQuery.removeListener(onChange);
-  }, []);
-
-  const isDarkTheme = settings.theme === 'dark' || (settings.theme === 'system' && prefersSystemDark);
+  const isDarkTheme = true;
 
   // Sync resolved dark mode class to document element
   useEffect(() => {
-    if (isDarkTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.add('dark');
   }, [isDarkTheme]);
 
   // Run Stale Data Cleanup on mount or settings change if enabled (>30 days)
@@ -150,6 +160,8 @@ export default function App() {
   const performSearch = useCallback(async (query: string) => {
     setIsSearching(true);
     try {
+      saveLastSearchCriteria(query, selectedProject);
+
       const activeSettings = {
         ...settings,
         // if user chose a specific project chip, override project key
@@ -200,7 +212,7 @@ export default function App() {
 
   // Initial load search
   useEffect(() => {
-    performSearch('');
+    performSearch(searchQuery);
   }, []);
 
   // Global Keyboard Shortcuts (Ctrl+K focus search, Ctrl+Shift+L jump to Cached Tickets tab)
@@ -244,8 +256,9 @@ export default function App() {
 
   // Save Settings handler
   const handleSaveSettings = (newSettings: ExtensionSettings) => {
-    setSettings(newSettings);
-    saveSettings(newSettings);
+    const forcedDarkSettings: ExtensionSettings = { ...newSettings, theme: 'dark' };
+    setSettings(forcedDarkSettings);
+    saveSettings(forcedDarkSettings);
     refreshCacheState();
   };
 
@@ -474,7 +487,7 @@ export default function App() {
       const res = await executeJiraSearch(searchQuery, settings);
       setSearchResults(res.issues);
       setIsOfflineResult(res.isOfflineResult);
-      if (res.issues.length > 0) {
+      if (searchQuery.trim().length > 0 && res.issues.length > 0) {
         const updatedCache = cacheMultipleIssues(res.issues, settings.maxCachedTickets);
         setCachedIssues(updatedCache);
       } else {
@@ -486,6 +499,14 @@ export default function App() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleCacheCurrentSearchResults = () => {
+    const explicitSearch = searchQuery.trim().length > 0;
+    if (!explicitSearch || searchResults.length === 0) return;
+    const updatedCache = cacheMultipleIssues(searchResults, settings.maxCachedTickets);
+    setCachedIssues(updatedCache);
+    refreshCacheState();
   };
 
   // Cache handlers
@@ -503,27 +524,34 @@ export default function App() {
 
   const handleClearAllData = () => {
     clearAllLocalData();
-    const defaultSet = loadSettings();
+    localStorage.removeItem(LAST_SEARCH_CRITERIA_KEY);
+    const defaultSet = { ...loadSettings(), theme: 'dark' as const };
     setSettings(defaultSet);
     setHistory([]);
     setCachedIssues([]);
+    setSearchQuery('');
+    setSelectedProject('ALL');
     refreshCacheState();
     performSearch('');
   };
 
   return (
     <div className={`min-h-screen font-sans antialiased selection:bg-blue-200 ${
-      isDarkTheme ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-800'
+      isDarkTheme ? 'dark bg-slate-950 text-slate-100' : 'bg-white text-slate-800'
     }`}>
 
       {/* Chrome Extension Container Shell */}
       <div
-        className={`mx-auto min-h-screen shadow-2xl transition-all duration-300 flex flex-col border-x ${
+        className={`min-h-screen shadow-2xl transition-all duration-300 flex flex-col ${
           isDarkTheme
             ? 'bg-slate-900 border-slate-800 shadow-black/80'
             : 'bg-white border-slate-200/80 shadow-slate-300/50'
         } ${
-          settings.viewMode === 'popup' ? 'max-w-[440px]' : 'max-w-5xl'
+          isForcedFullTabView
+            ? 'w-full max-w-none border-x-0'
+            : settings.viewMode === 'popup'
+              ? 'mx-auto max-w-[440px] border-x'
+              : 'mx-auto max-w-5xl border-x'
         }`}
       >
         {/* Navbar Header */}
@@ -540,7 +568,7 @@ export default function App() {
         />
 
         {/* Dynamic Tab Body */}
-        <main className={`flex-1 flex flex-col ${isDarkTheme ? 'bg-slate-900/90' : 'bg-slate-50/50'}`}>
+        <main className={`flex-1 flex flex-col ${isDarkTheme ? 'bg-slate-900/90' : 'bg-white'}`}>
           {/* SEARCH TAB */}
           {activeTab === 'search' && (
             <div className="flex-1 flex flex-col">
@@ -548,6 +576,8 @@ export default function App() {
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 onSearchSubmit={(q) => performSearch(q)}
+                onCacheSearchResults={handleCacheCurrentSearchResults}
+                canCacheSearchResults={searchQuery.trim().length > 0 && searchResults.length > 0}
                 settings={settings}
                 searchHistory={history}
                 isSearching={isSearching}

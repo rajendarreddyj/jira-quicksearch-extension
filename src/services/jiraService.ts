@@ -8,6 +8,300 @@ const PINNED_TICKETS_KEY = 'jira_ext_pinned_tickets';
 const WATCHED_TICKETS_KEY = 'jira_ext_watched_tickets';
 const RECENTLY_VIEWED_KEY = 'jira_ext_recently_viewed';
 
+function isExtensionRuntime(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).chrome?.runtime?.id;
+}
+
+function normalizeJiraUrl(jiraUrl: string): string {
+  return jiraUrl.replace(/\/+$/, '');
+}
+
+function isLikelyJql(query: string): boolean {
+  const q = query.trim();
+  if (!q) return false;
+  return (
+    /order\s+by/i.test(q) ||
+    /[=~()]/.test(q) ||
+    /\b(and|or|in|is|not|status|project|assignee|reporter|issuetype|priority|labels|issuekey)\b/i.test(q)
+  );
+}
+
+function splitOrderByClause(query: string): { criteria: string; orderBy: string } {
+  const orderMatch = /\border\s+by\b/i.exec(query);
+  if (!orderMatch || orderMatch.index < 0) {
+    return { criteria: query.trim(), orderBy: '' };
+  }
+
+  const criteria = query.slice(0, orderMatch.index).trim();
+  const orderBy = query.slice(orderMatch.index).trim();
+  return { criteria, orderBy };
+}
+
+function buildJql(projectKey: string, query: string): string {
+  let jql = '';
+  if (projectKey) {
+    const keys = projectKey.split(',').map((k) => k.trim()).filter(Boolean);
+    if (keys.length === 1) {
+      jql = `project = "${keys[0]}"`;
+    } else if (keys.length > 1) {
+      jql = `project IN (${keys.map((k) => `"${k}"`).join(',')})`;
+    }
+  }
+
+  const trimmed = (query || '').trim();
+  if (trimmed) {
+    if (isLikelyJql(trimmed)) {
+      const { criteria, orderBy } = splitOrderByClause(trimmed);
+
+      if (criteria) {
+        jql = jql ? `(${jql}) AND ${criteria}` : criteria;
+      }
+      if (orderBy) {
+        jql = jql ? `${jql} ${orderBy}` : orderBy;
+      }
+    } else if (/^[A-Z0-9]+-\d+$/i.test(trimmed)) {
+      jql = `issueKey = "${trimmed.toUpperCase()}"`;
+    } else {
+      const textCondition = `(summary ~ "${trimmed}*" OR text ~ "${trimmed}*")`;
+      jql = jql ? `${jql} AND ${textCondition}` : textCondition;
+    }
+  }
+
+  if (!jql) {
+    return 'order by updated DESC';
+  }
+  if (!/order\s+by/i.test(jql)) {
+    return `${jql} ORDER BY updated DESC`;
+  }
+  return jql;
+}
+
+function sanitizeOrderByParentheses(jql: string): string {
+  // Defensive normalization: Jira rejects ORDER BY inside a parenthesized condition block.
+  // Example fix: (reporter = currentUser() ORDER BY created DESC) -> reporter = currentUser() ORDER BY created DESC
+  return jql.replace(/\(\s*([^()]+?)\s+(ORDER\s+BY\b[^)]*)\)/gi, '$1 $2');
+}
+
+function buildProjectClause(projectKey: string): string {
+  const keys = (projectKey || '').split(',').map((k) => k.trim()).filter(Boolean);
+  if (keys.length === 0) return '';
+  if (keys.length === 1) return `project = "${keys[0]}"`;
+  return `project IN (${keys.map((k) => `"${k}"`).join(',')})`;
+}
+
+function prepareProxySearchPayload(
+  projectKey: string,
+  query: string,
+): { projectKey: string; query: string } {
+  const trimmedQuery = (query || '').trim();
+  if (!trimmedQuery || !projectKey || !isLikelyJql(trimmedQuery)) {
+    return { projectKey, query };
+  }
+
+  // If query already constrains project, do not inject another project clause.
+  if (/\bproject\s*(=|in)\b/i.test(trimmedQuery)) {
+    return { projectKey, query: sanitizeOrderByParentheses(trimmedQuery) };
+  }
+
+  const projectClause = buildProjectClause(projectKey);
+  if (!projectClause) {
+    return { projectKey, query: sanitizeOrderByParentheses(trimmedQuery) };
+  }
+
+  const mergedJql = sanitizeOrderByParentheses(`${projectClause} AND ${trimmedQuery}`);
+  // Clear projectKey so proxy does not merge again (important for older server builds).
+  return { projectKey: '', query: mergedJql };
+}
+
+function toPlainText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  if (Array.isArray(value)) {
+    return value.map((item) => toPlainText(item)).filter(Boolean).join(' ');
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if (typeof record.text === 'string') return record.text;
+    if (typeof record.value === 'string') return record.value;
+    if (record.content != null) return toPlainText(record.content);
+    return '';
+  }
+  return String(value);
+}
+
+function mapJiraApiIssue(issue: any, cleanUrl: string): JiraIssue {
+  return {
+    key: issue.key,
+    summary: issue.fields?.summary || 'No Summary',
+    status: {
+      name: issue.fields?.status?.name || 'To Do',
+      category:
+        (issue.fields?.status?.statusCategory?.key || 'new') === 'done'
+          ? 'done'
+          : issue.fields?.status?.statusCategory?.key === 'indeterminate'
+            ? 'in-progress'
+            : 'to-do',
+    },
+    priority: {
+      name: issue.fields?.priority?.name || 'Medium',
+      icon: issue.fields?.priority?.iconUrl || '',
+    },
+    issueType: {
+      name: issue.fields?.issuetype?.name || 'Task',
+      icon: issue.fields?.issuetype?.iconUrl || '',
+    },
+    assignee: issue.fields?.assignee
+      ? {
+          name: issue.fields.assignee.displayName,
+          avatar: issue.fields.assignee.avatarUrls?.['48x48'] || issue.fields.assignee.avatarUrls?.['32x32'],
+          email: issue.fields.assignee.emailAddress || '',
+        }
+      : { name: 'Unassigned', avatar: '', email: '' },
+    reporter: issue.fields?.reporter
+      ? {
+          name: issue.fields.reporter.displayName,
+          avatar: issue.fields.reporter.avatarUrls?.['48x48'],
+        }
+      : { name: 'System', avatar: '' },
+    description: toPlainText(issue.fields?.description) || 'No description provided.',
+    created: issue.fields?.created || new Date().toISOString(),
+    updated: issue.fields?.updated || new Date().toISOString(),
+    components: (issue.fields?.components || []).map((c: any) => c.name),
+    labels: issue.fields?.labels || [],
+    comments: (issue.fields?.comment?.comments || []).map((cmt: any) => ({
+      id: cmt.id,
+      author: cmt.author?.displayName || 'User',
+      body: toPlainText(cmt.body),
+      created: cmt.created,
+    })),
+    url: `${cleanUrl}/browse/${issue.key}`,
+  };
+}
+
+async function searchJiraLive(
+  query: string,
+  settings: ExtensionSettings,
+  maxResults: number,
+): Promise<{ issues: JiraIssue[]; total: number } | null> {
+  const cleanUrl = normalizeJiraUrl(settings.jiraUrl);
+  const preferDirect = isExtensionRuntime();
+  // In regular web mode (localhost), direct Jira calls trigger CORS.
+  // Use the local proxy only; keep direct calls for extension runtime.
+  const attempts: Array<'direct' | 'proxy'> = preferDirect ? ['direct', 'proxy'] : ['proxy'];
+
+  for (const attempt of attempts) {
+    try {
+      if (attempt === 'proxy') {
+        const proxyPayload = prepareProxySearchPayload(settings.projectKey, query);
+        const response = await fetch('/api/jira/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jiraUrl: settings.jiraUrl,
+            email: settings.userEmail,
+            apiToken: settings.apiToken,
+            projectKey: proxyPayload.projectKey,
+            query: proxyPayload.query,
+            maxResults,
+          }),
+        });
+
+        if (!response.ok) continue;
+        const data = await response.json();
+        return { issues: data.issues || [], total: data.total || 0 };
+      }
+
+      const jql = sanitizeOrderByParentheses(buildJql(settings.projectKey, query));
+      const auth = btoa(`${settings.userEmail}:${settings.apiToken}`);
+
+      // Prefer the current Jira endpoint first, then fall back for older tenants.
+      const directRequests: Array<{ url: string; init: RequestInit }> = [
+        {
+          url: `${cleanUrl}/rest/api/3/search/jql`,
+          init: {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${auth}`,
+            },
+            body: JSON.stringify({
+              jql,
+              maxResults,
+              fields: [
+                'summary',
+                'status',
+                'priority',
+                'issuetype',
+                'assignee',
+                'reporter',
+                'created',
+                'updated',
+                'description',
+                'components',
+                'labels',
+                'comment',
+              ],
+            }),
+          },
+        },
+        {
+          url: `${cleanUrl}/rest/api/3/search`,
+          init: {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${auth}`,
+            },
+            body: JSON.stringify({
+              jql,
+              maxResults,
+              fields: [
+                'summary',
+                'status',
+                'priority',
+                'issuetype',
+                'assignee',
+                'reporter',
+                'created',
+                'updated',
+                'description',
+                'components',
+                'labels',
+                'comment',
+              ],
+            }),
+          },
+        },
+        {
+          url: `${cleanUrl}/rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}&fields=summary,status,priority,issuetype,assignee,reporter,created,updated,description,components,labels,comment`,
+          init: {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Basic ${auth}`,
+            },
+          },
+        },
+      ];
+
+      for (const request of directRequests) {
+        const response = await fetch(request.url, request.init);
+        if (!response.ok) continue;
+
+        const data = await response.json();
+        const liveIssues: JiraIssue[] = (data.issues || []).map((issue: any) => mapJiraApiIssue(issue, cleanUrl));
+        return { issues: liveIssues, total: data.total || liveIssues.length };
+      }
+    } catch {
+      // Try next strategy.
+    }
+  }
+
+  return null;
+}
+
 // --- WATCHED TICKETS MANAGEMENT ---
 export function getWatchedTicketKeys(): string[] {
   try {
@@ -100,18 +394,19 @@ export function loadSettings(): ExtensionSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) {
-      saveSettings(INITIAL_SETTINGS);
-      return INITIAL_SETTINGS;
+      const defaultDark = { ...INITIAL_SETTINGS, theme: 'dark' as const };
+      saveSettings(defaultDark);
+      return defaultDark;
     }
-    return { ...INITIAL_SETTINGS, ...JSON.parse(raw) };
+    return { ...INITIAL_SETTINGS, ...JSON.parse(raw), theme: 'dark' };
   } catch (e) {
-    return INITIAL_SETTINGS;
+    return { ...INITIAL_SETTINGS, theme: 'dark' };
   }
 }
 
 export function saveSettings(settings: ExtensionSettings): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, theme: 'dark' }));
   } catch (e) {
     console.error('Failed to save settings to localStorage:', e);
   }
@@ -308,26 +603,10 @@ export async function syncAndRefreshAllCachedIssues(settings: ExtensionSettings)
   if (!settings.isSimulatedOffline && settings.jiraUrl && settings.apiToken && settings.userEmail) {
     try {
       const keysToRefresh = cached.map(i => i.key).join(', ');
-      const response = await fetch('/api/jira/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jiraUrl: settings.jiraUrl,
-          email: settings.userEmail,
-          apiToken: settings.apiToken,
-          projectKey: settings.projectKey,
-          query: `issueKey in (${keysToRefresh})`,
-          maxResults: cached.length,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const liveIssues: JiraIssue[] = data.issues || [];
-        if (liveIssues.length > 0) {
-          const updatedCache = cacheMultipleIssues(liveIssues, settings.maxCachedTickets);
-          return updatedCache;
-        }
+      const liveResult = await searchJiraLive(`issueKey in (${keysToRefresh})`, settings, cached.length);
+      if (liveResult && liveResult.issues.length > 0) {
+        const updatedCache = cacheMultipleIssues(liveResult.issues, settings.maxCachedTickets);
+        return updatedCache;
       }
     } catch (e) {
       console.warn('Background sync failed, using touch refresh fallback:', e);
@@ -406,27 +685,15 @@ export async function executeJiraSearch(
   // Attempt real API call via server proxy if API token is present or test server connection
   if (settings.jiraUrl && settings.apiToken && settings.userEmail) {
     try {
-      const response = await fetch('/api/jira/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jiraUrl: settings.jiraUrl,
-          email: settings.userEmail,
-          apiToken: settings.apiToken,
-          projectKey: settings.projectKey,
-          query,
-          maxResults: settings.maxCachedTickets,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const liveIssues: JiraIssue[] = data.issues || [];
-        // Auto-cache results if setting enabled
-        if (settings.autoCacheOnSearch && liveIssues.length > 0) {
+      const liveResult = await searchJiraLive(query, settings, settings.maxCachedTickets);
+      if (liveResult) {
+        const liveIssues = liveResult.issues;
+        // Auto-cache only for explicit (non-empty) searches.
+        const hasExplicitQuery = query.trim().length > 0;
+        if (settings.autoCacheOnSearch && hasExplicitQuery && liveIssues.length > 0) {
           cacheMultipleIssues(liveIssues, settings.maxCachedTickets);
         }
-        return { issues: liveIssues, total: data.total, isOfflineResult: false };
+        return { issues: liveIssues, total: liveResult.total, isOfflineResult: false };
       }
     } catch (err) {
       console.warn('Real Jira search proxy unreachable or failed, falling back to local dataset:', err);
@@ -496,21 +763,21 @@ function searchLocalCacheAndMocks(
       });
     } else if (cleanQuery.startsWith('status =')) {
       const statusVal = cleanQuery.replace('status =', '').replace(/"/g, '').trim();
-      filtered = filtered.filter(i => i.status.name.toLowerCase().includes(statusVal));
+      filtered = filtered.filter(i => toPlainText(i.status.name).toLowerCase().includes(statusVal));
     } else if (cleanQuery.includes('labels =') || cleanQuery.includes('label =')) {
       const labelVal = cleanQuery.replace(/labels?\s*=\s*/, '').replace(/"/g, '').trim();
-      filtered = filtered.filter(i => i.labels.some(l => l.toLowerCase().includes(labelVal.toLowerCase())));
+      filtered = filtered.filter(i => (i.labels || []).some(l => toPlainText(l).toLowerCase().includes(labelVal.toLowerCase())));
     } else if (/^[a-z0-9]+-\d+$/i.test(cleanQuery)) {
       filtered = filtered.filter(i => i.key.toLowerCase() === cleanQuery);
     } else {
       filtered = filtered.filter(i =>
-        i.key.toLowerCase().includes(cleanQuery) ||
-        i.summary.toLowerCase().includes(cleanQuery) ||
-        i.description.toLowerCase().includes(cleanQuery) ||
-        i.labels.some(l => l.toLowerCase().includes(cleanQuery)) ||
-        i.components.some(c => c.toLowerCase().includes(cleanQuery)) ||
-        i.assignee.name.toLowerCase().includes(cleanQuery) ||
-        (i.assignee.email && i.assignee.email.toLowerCase().includes(cleanQuery))
+        toPlainText(i.key).toLowerCase().includes(cleanQuery) ||
+        toPlainText(i.summary).toLowerCase().includes(cleanQuery) ||
+        toPlainText(i.description).toLowerCase().includes(cleanQuery) ||
+        (i.labels || []).some(l => toPlainText(l).toLowerCase().includes(cleanQuery)) ||
+        (i.components || []).some(c => toPlainText(c).toLowerCase().includes(cleanQuery)) ||
+        toPlainText(i.assignee?.name).toLowerCase().includes(cleanQuery) ||
+        toPlainText(i.assignee?.email).toLowerCase().includes(cleanQuery)
       );
     }
   }

@@ -13,10 +13,7 @@ import {
   EyeOff,
   Download,
   Upload,
-  CheckCircle2,
-  Moon,
-  Sun,
-  Palette
+  CheckCircle2
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -136,14 +133,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleThemeChange = (theme: ExtensionSettings['theme']) => {
-    setFormData((prev) => {
-      const updated = { ...prev, theme };
-      onSaveSettings(updated);
-      return updated;
-    });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveSettings(formData);
@@ -151,32 +140,65 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
+  const testJiraConnectionDirect = async () => {
+    const cleanUrl = (formData.jiraUrl || '').replace(/\/+$/, '');
+    const auth = btoa(`${formData.userEmail}:${formData.apiToken}`);
+
+    const endpoints = [`${cleanUrl}/rest/api/3/myself`, `${cleanUrl}/rest/api/2/myself`];
+
+    for (const targetUrl of endpoints) {
+      const response = await fetch(targetUrl, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Basic ${auth}`,
+        },
+      });
+
+      if (!response.ok) continue;
+
+      const user = await response.json();
+      return {
+        success: true,
+        message: `Connected successfully as ${user.displayName || user.emailAddress || 'Jira User'}`,
+      };
+    }
+
+    throw new Error('Failed to authenticate with Jira. Check Jira URL, email, API token, and project access.');
+  };
+
   const handleTestConnection = async () => {
     setTestStatus({ loading: true });
     try {
-      const response = await fetch('/api/jira/test-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jiraUrl: formData.jiraUrl,
-          email: formData.userEmail,
-          apiToken: formData.apiToken,
-        }),
-      });
+      const isExtensionRuntime = typeof window !== 'undefined' && !!(window as any).chrome?.runtime?.id;
 
-      const result = await response.json();
-      if (response.ok && result.success) {
-        setTestStatus({
-          loading: false,
-          success: true,
-          message: result.message || 'Successfully authenticated with Jira!',
-        });
+      if (isExtensionRuntime) {
+        const result = await testJiraConnectionDirect();
+        setTestStatus({ loading: false, success: true, message: result.message });
       } else {
-        setTestStatus({
-          loading: false,
-          success: false,
-          message: result.message || 'Connection test failed. Check Jira URL or token.',
+        const response = await fetch('/api/jira/test-connection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jiraUrl: formData.jiraUrl,
+            email: formData.userEmail,
+            apiToken: formData.apiToken,
+          }),
         });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setTestStatus({
+            loading: false,
+            success: true,
+            message: result.message || 'Successfully authenticated with Jira!',
+          });
+        } else {
+          setTestStatus({
+            loading: false,
+            success: false,
+            message: result.message || 'Connection test failed. Check Jira URL or token.',
+          });
+        }
       }
     } catch (err: any) {
       setTestStatus({
@@ -323,52 +345,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Appearance & Theme Settings Card */}
-        <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
-            <span className="flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              Appearance &amp; Dark Mode Theme
-            </span>
-            <span className="text-[10px] text-slate-400 font-normal">Tailwind Theme Engine</span>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">Extension Theme</span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Switch interface theme between Light and Dark mode</span>
-            </div>
-
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => handleThemeChange('light')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
-                  formData.theme === 'light'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Light</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleThemeChange('dark')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
-                  formData.theme === 'dark'
-                    ? 'bg-slate-900 text-amber-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                <span>Dark</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Cache & Performance Options */}
         <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
           <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
@@ -499,6 +475,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
+        {/* Save Settings Button */}
+        <div className="flex justify-end pt-1">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5"
+          >
+            <Check className="w-4 h-4" />
+            <span>Save Settings</span>
+          </button>
+        </div>
+
         {/* Multi-Device Sync & Export/Import JSON Card */}
         <div className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl space-y-3 shadow-2xs">
           <div className="flex items-center justify-between font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 pb-2">
@@ -553,16 +540,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
         </div>
 
-        {/* Save Settings Button */}
-        <div className="flex justify-end pt-1">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5"
-          >
-            <Check className="w-4 h-4" />
-            <span>Save Settings</span>
-          </button>
-        </div>
       </form>
 
       {/* Clear Local Data Options Section */}

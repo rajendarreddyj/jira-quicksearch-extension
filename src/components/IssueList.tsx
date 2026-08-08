@@ -19,7 +19,6 @@ import {
   Square,
   Trash2,
   ListFilter,
-  Target,
   ArrowUpDown
 } from 'lucide-react';
 
@@ -48,10 +47,45 @@ export const IssueList: React.FC<IssueListProps> = ({
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
-  const [quickFilter, setQuickFilter] = useState<'all' | 'my' | 'high_priority' | 'in_progress' | 'done' | 'bugs'>('all');
+  const [quickFilter, setQuickFilter] = useState<
+    | 'all'
+    | 'my'
+    | 'high_priority'
+    | 'bugs'
+    | 'status_todo'
+    | 'status_in_progress'
+    | 'status_blocked'
+    | 'status_in_review'
+    | 'status_ready_to_test'
+    | 'status_in_test'
+    | 'status_final_review'
+    | 'status_done'
+  >('all');
   const [sortBy, setSortBy] = useState<'updated' | 'priority' | 'created' | 'assignee'>('updated');
-  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+
+  const normalizeStatusKey = (statusName: string) => {
+    const cleaned = statusName.trim().toLowerCase().replace(/[-_]+/g, ' ');
+    if (cleaned === 'to do' || cleaned === 'todo') return 'todo';
+    if (cleaned.includes('blocked') || cleaned.includes('on hold')) return 'blocked';
+    if (cleaned === 'in review' || cleaned.includes('code review') || cleaned.includes('peer review')) return 'in_review';
+    if (cleaned === 'ready to test' || cleaned === 'ready for test' || cleaned === 'ready for testing') return 'ready_to_test';
+    if (cleaned === 'in test' || cleaned === 'in testing' || cleaned === 'testing') return 'in_test';
+    if (cleaned === 'final review') return 'final_review';
+    if (cleaned.includes('done') || cleaned.includes('closed') || cleaned.includes('resolved')) return 'done';
+    if (cleaned.includes('progress') || cleaned === 'inprogress' || cleaned === 'in progress') return 'in_progress';
+    return cleaned;
+  };
+
+  const hasStatus = (issue: JiraIssue, statusKey: string) => {
+    if (statusKey === 'in_progress') {
+      if (issue.status?.category === 'in-progress') return true;
+    }
+    if (statusKey === 'done') {
+      if (issue.status?.category === 'done') return true;
+    }
+    return normalizeStatusKey(issue.status?.name || '') === statusKey;
+  };
 
   // Compute Quick Filter counts dynamically
   const myCount = issues.filter(i => {
@@ -60,8 +94,14 @@ export const IssueList: React.FC<IssueListProps> = ({
     return a.includes('sarah') || a.includes('you') || e.includes('sarah');
   }).length;
   const highCount = issues.filter(i => ['high', 'highest', 'critical'].includes((i.priority?.name || '').toLowerCase())).length;
-  const inProgressCount = issues.filter(i => i.status?.category === 'in-progress' || (i.status?.name || '').toLowerCase().includes('progress')).length;
-  const doneCount = issues.filter(i => i.status?.category === 'done' || (i.status?.name || '').toLowerCase().includes('done')).length;
+  const todoCount = issues.filter(i => hasStatus(i, 'todo')).length;
+  const inProgressCount = issues.filter(i => hasStatus(i, 'in_progress')).length;
+  const blockedCount = issues.filter(i => hasStatus(i, 'blocked')).length;
+  const inReviewCount = issues.filter(i => hasStatus(i, 'in_review')).length;
+  const readyToTestCount = issues.filter(i => hasStatus(i, 'ready_to_test')).length;
+  const inTestCount = issues.filter(i => hasStatus(i, 'in_test')).length;
+  const finalReviewCount = issues.filter(i => hasStatus(i, 'final_review')).length;
+  const doneCount = issues.filter(i => hasStatus(i, 'done')).length;
   const bugsCount = issues.filter(i => i.issueType?.name === 'Bug').length;
 
   // Priority weight map for sorting
@@ -85,10 +125,22 @@ export const IssueList: React.FC<IssueListProps> = ({
       } else if (quickFilter === 'high_priority') {
         const pName = (issue.priority?.name || '').toLowerCase();
         if (!['high', 'highest', 'critical'].includes(pName)) return false;
-      } else if (quickFilter === 'in_progress') {
-        if (issue.status?.category !== 'in-progress' && !issue.status?.name.toLowerCase().includes('progress')) return false;
-      } else if (quickFilter === 'done') {
-        if (issue.status?.category !== 'done' && !issue.status?.name.toLowerCase().includes('done')) return false;
+      } else if (quickFilter === 'status_todo') {
+        if (!hasStatus(issue, 'todo')) return false;
+      } else if (quickFilter === 'status_in_progress') {
+        if (!hasStatus(issue, 'in_progress')) return false;
+      } else if (quickFilter === 'status_blocked') {
+        if (!hasStatus(issue, 'blocked')) return false;
+      } else if (quickFilter === 'status_in_review') {
+        if (!hasStatus(issue, 'in_review')) return false;
+      } else if (quickFilter === 'status_ready_to_test') {
+        if (!hasStatus(issue, 'ready_to_test')) return false;
+      } else if (quickFilter === 'status_in_test') {
+        if (!hasStatus(issue, 'in_test')) return false;
+      } else if (quickFilter === 'status_final_review') {
+        if (!hasStatus(issue, 'final_review')) return false;
+      } else if (quickFilter === 'status_done') {
+        if (!hasStatus(issue, 'done')) return false;
       } else if (quickFilter === 'bugs') {
         if (issue.issueType?.name !== 'Bug') return false;
       }
@@ -99,14 +151,6 @@ export const IssueList: React.FC<IssueListProps> = ({
         const filterP = priorityFilter.toLowerCase();
         if (filterP === 'highest' && (p !== 'highest' && p !== 'critical')) return false;
         if (filterP !== 'highest' && p !== filterP) return false;
-      }
-
-      // Focus Mode filter
-      if (isFocusMode) {
-        const isPinned = !!issue.isPinned;
-        const assigneeName = (issue.assignee?.name || '').toLowerCase();
-        const isUserAssigned = assigneeName.includes('you') || assigneeName.includes('sarah') || assigneeName.includes('alex') || assigneeName.includes('dev');
-        if (!isPinned && !isUserAssigned) return false;
       }
 
       return true;
@@ -131,7 +175,7 @@ export const IssueList: React.FC<IssueListProps> = ({
   useEffect(() => {
     setFocusedIndex(0);
     setSelectedKeys([]);
-  }, [issues, priorityFilter, sortBy, isFocusMode]);
+  }, [issues, priorityFilter, sortBy, quickFilter]);
 
   // Bulk selection helper
   const isAllSelected = filteredIssues.length > 0 && selectedKeys.length === filteredIssues.length;
@@ -199,13 +243,13 @@ export const IssueList: React.FC<IssueListProps> = ({
 
   if (issues.length === 0) {
     return (
-      <div className="p-8 text-center space-y-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl my-4 mx-3">
-        <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+      <div className="p-8 text-center space-y-3 bg-slate-900 border border-dashed border-slate-700 rounded-xl my-4 mx-3">
+        <div className="w-12 h-12 bg-slate-800 text-slate-300 rounded-full flex items-center justify-center mx-auto border border-slate-700">
           <AlertCircle className="w-6 h-6" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-slate-700">No Jira Tickets Found</p>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+          <p className="text-sm font-semibold text-slate-100">No Jira Tickets Found</p>
+          <p className="text-xs text-slate-300 max-w-xs mx-auto">
             {searchQuery
               ? `No issues matched "${searchQuery}". Try a different ticket key or broader search term.`
               : 'Try searching by Jira ticket key (e.g. PROJ-101), summary text, or JQL query.'}
@@ -233,7 +277,7 @@ export const IssueList: React.FC<IssueListProps> = ({
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-slate-700 border border-slate-200">
             {statusName}
           </span>
         );
@@ -273,7 +317,7 @@ export const IssueList: React.FC<IssueListProps> = ({
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-white text-slate-700 border border-slate-200">
             <ArrowDown className="w-2.5 h-2.5 text-slate-400" />
             <span>{priorityName || 'Lowest'}</span>
           </span>
@@ -331,7 +375,7 @@ export const IssueList: React.FC<IssueListProps> = ({
     <div className="space-y-2 p-3">
       {/* Recently Viewed Section (Last 5 Opened Tickets) */}
       {recentlyViewed && recentlyViewed.length > 0 && (
-        <div className="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-1.5 shadow-2xs">
+        <div className="bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-1.5 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -361,7 +405,7 @@ export const IssueList: React.FC<IssueListProps> = ({
 
       {/* Offline result header notification banner if offline */}
       {isOfflineResult && (
-        <div className="flex items-center justify-between text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 mb-2">
+        <div className="flex items-center justify-between text-[11px] bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 mb-2">
           <div className="flex items-center gap-1.5">
             <Database className="w-3.5 h-3.5 text-emerald-600" />
             <span>Loaded from local cache dataset</span>
@@ -370,153 +414,68 @@ export const IssueList: React.FC<IssueListProps> = ({
         </div>
       )}
 
-      {/* Quick Filter Chips Row */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin text-xs">
-        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
-          <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          <span>Quick Filters:</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('all')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'all'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>All</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'all' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {issues.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('my')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'my'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>My Issues</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'my' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {myCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('high_priority')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'high_priority'
-              ? 'bg-amber-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>High Priority</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'high_priority' ? 'bg-amber-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {highCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('in_progress')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'in_progress'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>In Progress</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'in_progress' ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {inProgressCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('done')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'done'
-              ? 'bg-emerald-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>Done</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'done' ? 'bg-emerald-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {doneCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('bugs')}
-          className={`px-2.5 py-1 rounded-lg font-semibold text-xs transition-all shrink-0 flex items-center gap-1.5 ${
-            quickFilter === 'bugs'
-              ? 'bg-rose-600 text-white shadow-2xs'
-              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-          }`}
-        >
-          <span>Bugs</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${quickFilter === 'bugs' ? 'bg-rose-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            {bugsCount}
-          </span>
-        </button>
-      </div>
-
-      {/* Control Toolbar: Focus Mode, Select All, Priority & Sort */}
-      <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs gap-2">
-        {/* Left Controls: Select All & Focus Mode */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleToggleSelectAll}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-          >
-            {isAllSelected ? (
-              <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            ) : selectedKeys.length > 0 ? (
-              <CheckSquare className="w-4 h-4 text-blue-400" />
-            ) : (
-              <Square className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-            )}
-            <span>Select All</span>
-          </button>
-          {selectedKeys.length > 0 && (
-            <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-              {selectedKeys.length} selected
-            </span>
-          )}
-
-          {/* Focus Mode Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setIsFocusMode(!isFocusMode)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
-              isFocusMode
-                ? 'bg-purple-600 text-white border-purple-700 shadow-xs ring-2 ring-purple-200'
-                : 'bg-slate-50 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-600'
-            }`}
-            title="Focus Mode: Hide tickets except those assigned to you or pinned"
-          >
-            <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-amber-300 animate-spin-slow' : 'text-purple-600 dark:text-purple-400'}`} />
-            <span>Focus Mode</span>
-            {isFocusMode && (
-              <span className="text-[9px] bg-purple-900 text-purple-200 px-1 py-0.2 rounded ml-0.5 font-mono">
-                ON
+      {/* Control Toolbar: Select All, Priority & Sort */}
+      <div className="flex flex-col items-start justify-start bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs gap-2.5">
+        {/* Left Controls: Select All */}
+        <div className="flex flex-col gap-2 min-w-0 w-full">
+          <div className="flex flex-wrap items-center gap-2 w-full">
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              {isAllSelected ? (
+                <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              ) : selectedKeys.length > 0 ? (
+                <CheckSquare className="w-4 h-4 text-blue-400" />
+              ) : (
+                <Square className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+              )}
+              <span>Select All</span>
+            </button>
+            {selectedKeys.length > 0 && (
+              <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                {selectedKeys.length} selected
               </span>
             )}
-          </button>
+          </div>
+
+          <div className="flex flex-col gap-1 text-xs min-w-0 w-full">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Filter className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <span>Quick Filter</span>
+            </span>
+
+            <select
+              value={quickFilter}
+              onChange={(e) => setQuickFilter(e.target.value as typeof quickFilter)}
+              className="w-full text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="all">All ({issues.length})</option>
+              <option value="status_todo">To Do ({todoCount})</option>
+              <option value="status_in_progress">In Progress ({inProgressCount})</option>
+              <option value="status_blocked">Blocked ({blockedCount})</option>
+              <option value="status_in_review">In Review ({inReviewCount})</option>
+              <option value="status_ready_to_test">Ready to Test ({readyToTestCount})</option>
+              <option value="status_in_test">In Test ({inTestCount})</option>
+              <option value="status_final_review">Final Review ({finalReviewCount})</option>
+              <option value="status_done">Done ({doneCount})</option>
+              <option value="my">My Issues ({myCount})</option>
+              <option value="high_priority">High Priority ({highCount})</option>
+              <option value="bugs">Bugs ({bugsCount})</option>
+            </select>
+          </div>
         </div>
 
         {/* Right Controls: Sort By & Priority Filter */}
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">Sort:</span>
+          <div className="flex items-center gap-1.5 min-w-0 w-full">
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-full text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="updated">Recently Updated</option>
               <option value="priority">Priority (High to Low)</option>
@@ -526,12 +485,12 @@ export const IssueList: React.FC<IssueListProps> = ({
           </div>
 
           {/* Priority Filter Dropdown */}
-          <div className="flex items-center gap-1">
-            <ListFilter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+          <div className="flex items-center gap-1.5 min-w-0 w-full">
+            <ListFilter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-full text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="ALL">All Priorities ({issues.length})</option>
               <option value="Highest">Highest / Critical</option>
@@ -611,7 +570,7 @@ export const IssueList: React.FC<IssueListProps> = ({
       )}
 
       {/* Keyboard Navigation Hint Bar */}
-      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80 mb-1">
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80 mb-1">
         <div className="flex items-center gap-1.5 font-medium">
           <Keyboard className="w-3 h-3 text-blue-600 dark:text-blue-400" />
           <span>Keyboard Nav: Use <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">↑</kbd> <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">↓</kbd> or <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">J</kbd>/<kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">K</kbd> to move, <kbd className="px-1 py-0.2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded font-mono font-bold text-slate-700 dark:text-slate-200">Enter</kbd> to open</span>
@@ -672,7 +631,7 @@ export const IssueList: React.FC<IssueListProps> = ({
                       {getPriorityBadge(issue.priority.name)}
 
                       {/* Issue Type */}
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded border border-slate-200/50 dark:border-slate-700/50">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-white dark:bg-slate-800 px-1.5 py-0.2 rounded border border-slate-200/50 dark:border-slate-700/50">
                         {issue.issueType.name}
                       </span>
                     </div>
@@ -689,7 +648,7 @@ export const IssueList: React.FC<IssueListProps> = ({
                           className={`p-1 rounded-md transition-all cursor-pointer ${
                             issue.isPinned
                               ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 hover:bg-amber-200 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800'
-                              : 'text-slate-300 dark:text-slate-600 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                : 'text-slate-300 dark:text-slate-600 hover:text-amber-500 hover:bg-white dark:hover:bg-slate-800'
                           }`}
                           title={issue.isPinned ? 'Unpin ticket' : 'Pin ticket to top'}
                         >
@@ -736,7 +695,7 @@ export const IssueList: React.FC<IssueListProps> = ({
 
                     <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-400">
                       {getStatusDurationLabel(issue) && (
-                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700" title="Time spent in current status">
+                        <span className="flex items-center gap-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700" title="Time spent in current status">
                           <Clock className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
                           {getStatusDurationLabel(issue)}
                         </span>
@@ -750,7 +709,7 @@ export const IssueList: React.FC<IssueListProps> = ({
                       )}
 
                       {issue.components && issue.components.length > 0 && (
-                        <span className="hidden sm:inline bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded truncate max-w-[100px] border border-slate-200/50 dark:border-slate-700/50">
+                        <span className="hidden sm:inline bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded truncate max-w-[100px] border border-slate-200/50 dark:border-slate-700/50">
                           {issue.components[0]}
                         </span>
                       )}

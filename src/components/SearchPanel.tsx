@@ -1,12 +1,37 @@
 import React, { useState } from 'react';
 import { ExtensionSettings, SearchHistoryItem } from '../types';
-import { Search, X, Code, Clock, ArrowRight, Zap, UserCheck, Pin, Mic, MicOff, Copy, Check } from 'lucide-react';
+import { Search, X, Code, Clock, ArrowRight, Zap, UserCheck, Pin, Copy, Check, BookmarkPlus, Bookmark, Trash2 } from 'lucide-react';
 import { JqlHelperModal } from './JqlHelperModal';
+
+interface SavedCustomFilter {
+  id: string;
+  name: string;
+  query: string;
+}
+
+const CUSTOM_FILTERS_KEY = 'jira_ext_custom_filters';
+
+function loadSavedCustomFilters(): SavedCustomFilter[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FILTERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomFilters(filters: SavedCustomFilter[]): void {
+  localStorage.setItem(CUSTOM_FILTERS_KEY, JSON.stringify(filters));
+}
 
 interface SearchPanelProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onSearchSubmit: (q: string) => void;
+  onCacheSearchResults: () => void;
+  canCacheSearchResults: boolean;
   settings: ExtensionSettings;
   searchHistory: SearchHistoryItem[];
   isSearching: boolean;
@@ -18,6 +43,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   searchQuery,
   setSearchQuery,
   onSearchSubmit,
+  onCacheSearchResults,
+  canCacheSearchResults,
   settings,
   searchHistory,
   isSearching,
@@ -26,63 +53,16 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
 }) => {
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [showJqlHelp, setShowJqlHelp] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
   const [copiedSugLabel, setCopiedSugLabel] = useState<string | null>(null);
+  const [savedFilters, setSavedFilters] = useState<SavedCustomFilter[]>(loadSavedCustomFilters);
+  const [saveFilterStatus, setSaveFilterStatus] = useState<string | null>(null);
+  const [cacheStatus, setCacheStatus] = useState<string | null>(null);
 
   const handleCopySuggestionJql = (label: string, e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(label);
     setCopiedSugLabel(label);
     setTimeout(() => setCopiedSugLabel(null), 2000);
-  };
-
-  const startVoiceSearch = () => {
-    setSpeechError(null);
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setSpeechError('Speech recognition is not supported in this browser.');
-      setTimeout(() => setSpeechError(null), 3000);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0]?.[0]?.transcript;
-        if (transcript) {
-          setSearchQuery(transcript);
-          onSearchSubmit(transcript);
-        }
-        setIsListening(false);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setSpeechError(`Voice input error: ${event.error}`);
-        setIsListening(false);
-        setTimeout(() => setSpeechError(null), 3000);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } catch (err) {
-      console.error('Failed to start speech recognition:', err);
-      setSpeechError('Microphone access blocked or unavailable.');
-      setIsListening(false);
-      setTimeout(() => setSpeechError(null), 3000);
-    }
   };
 
   const availableProjects = settings.projectKey
@@ -146,6 +126,47 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
     setShowHistoryDropdown(false);
   };
 
+  const handleSaveCustomFilter = () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    const existing = savedFilters.find((f) => f.query.toLowerCase() === query.toLowerCase());
+    if (existing) {
+      setSaveFilterStatus('Already saved');
+      setTimeout(() => setSaveFilterStatus(null), 1800);
+      return;
+    }
+
+    const name = query.length > 34 ? `${query.slice(0, 34)}...` : query;
+    const next: SavedCustomFilter[] = [
+      {
+        id: `cf_${Date.now()}`,
+        name,
+        query,
+      },
+      ...savedFilters,
+    ].slice(0, 20);
+
+    setSavedFilters(next);
+    saveCustomFilters(next);
+    setSaveFilterStatus('Saved');
+    setTimeout(() => setSaveFilterStatus(null), 1800);
+  };
+
+  const handleDeleteCustomFilter = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = savedFilters.filter((f) => f.id !== id);
+    setSavedFilters(next);
+    saveCustomFilters(next);
+  };
+
+  const handleCacheResults = () => {
+    if (!canCacheSearchResults) return;
+    onCacheSearchResults();
+    setCacheStatus('Cached');
+    setTimeout(() => setCacheStatus(null), 1600);
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-3 space-y-2.5 shadow-xs">
       {/* Search Bar Input */}
@@ -160,30 +181,12 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={() => setShowHistoryDropdown(true)}
             placeholder="Search key (PROJ-101), summary, or JQL query... (⌘K)"
-            className="w-full pl-9 pr-28 py-2 text-xs bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-inner"
+            className="w-full pl-9 pr-28 py-2 text-xs bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-inner"
           />
 
-          {/* Right Action Icons & Voice Search & Shortcut badge */}
+          {/* Right Action Icons & Shortcut badge */}
           <div className="absolute right-2 flex items-center gap-1.5">
-            {/* Voice Search Button */}
-            <button
-              type="button"
-              onClick={startVoiceSearch}
-              className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
-                isListening
-                  ? 'bg-rose-600 text-white animate-pulse shadow-md ring-2 ring-rose-400'
-                  : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200'
-              }`}
-              title={isListening ? 'Listening for voice input...' : 'Click to trigger Voice Search (Web Speech API)'}
-            >
-              {isListening ? (
-                <MicOff className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Mic className="w-3.5 h-3.5 text-blue-600" />
-              )}
-            </button>
-
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold font-mono bg-slate-200 text-slate-600 border border-slate-300 rounded shadow-2xs">
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold font-mono bg-white text-slate-600 border border-slate-300 rounded shadow-2xs">
               ⌘K
             </kbd>
 
@@ -191,7 +194,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-200/60"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-white"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -211,23 +214,6 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Voice Search Feedback / Error Banner */}
-        {isListening && (
-          <div className="mt-1 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs font-medium text-rose-700 flex items-center gap-2 animate-in fade-in">
-            <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
-            <span>Listening to voice query... Speak now (e.g. &quot;assigned to me&quot; or &quot;PROJ-101&quot;)</span>
-          </div>
-        )}
-
-        {speechError && (
-          <div className="mt-1 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-medium text-amber-800 flex items-center justify-between animate-in fade-in">
-            <span>{speechError}</span>
-            <button type="button" onClick={() => setSpeechError(null)} className="text-amber-600 hover:text-amber-900">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
 
         {/* Quick History Dropdown */}
         {showHistoryDropdown && searchHistory.length > 0 && !searchQuery && (
@@ -281,14 +267,22 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               <span className="text-[9px] text-slate-400 font-normal">Click or press Tab</span>
             </div>
             {activeSuggestions.map((sug, idx) => (
-              <button
+              <div
                 key={idx}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setSearchQuery(sug.label);
                   onSearchSubmit(sug.label);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-slate-800 dark:text-slate-100 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center justify-between group transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSearchQuery(sug.label);
+                    onSearchSubmit(sug.label);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs text-slate-800 dark:text-slate-100 hover:bg-blue-50 dark:hover:bg-slate-700 focus:bg-blue-50 dark:focus:bg-slate-700 focus:outline-none flex items-center justify-between group transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-none cursor-pointer"
               >
                 <div className="flex items-center gap-2 truncate pr-2">
                   <span
@@ -309,7 +303,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   <button
                     type="button"
                     onClick={(e) => handleCopySuggestionJql(sug.label, e)}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 hover:text-blue-600 transition-colors"
+                    className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded text-slate-500 hover:text-blue-600 transition-colors"
                     title="Copy JQL string to clipboard"
                   >
                     {copiedSugLabel === sug.label ? (
@@ -320,7 +314,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   </button>
                   <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -336,7 +330,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
               selectedProject === 'ALL'
                 ? 'bg-slate-800 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
             }`}
           >
             All
@@ -348,7 +342,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                 selectedProject === pKey
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
               }`}
             >
               {pKey}
@@ -363,6 +357,30 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         >
           <Code className="w-3 h-3" />
           <span>JQL Helper</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleCacheResults}
+          disabled={!canCacheSearchResults}
+          className="text-[11px] text-cyan-300 hover:text-cyan-200 disabled:text-slate-500 disabled:cursor-not-allowed font-medium flex items-center gap-1"
+          title="Add current search results to offline cache"
+        >
+          <Bookmark className="w-3 h-3" />
+          <span>Cache Results</span>
+          {cacheStatus && <span className="text-[10px] text-emerald-300">{cacheStatus}</span>}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSaveCustomFilter}
+          disabled={!searchQuery.trim()}
+          className="text-[11px] text-indigo-300 hover:text-indigo-200 disabled:text-slate-500 disabled:cursor-not-allowed font-medium flex items-center gap-1"
+          title="Save current query as a custom filter"
+        >
+          <BookmarkPlus className="w-3 h-3" />
+          <span>Save Filter</span>
+          {saveFilterStatus && <span className="text-[10px] text-emerald-300">{saveFilterStatus}</span>}
         </button>
       </div>
 
@@ -393,7 +411,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         </button>
         <button
           onClick={() => applyQuickFilter('status = "In Progress"')}
-          className="px-2 py-0.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-full border border-slate-200 font-medium whitespace-nowrap transition-colors"
+          className="px-2 py-0.5 bg-white text-slate-700 hover:bg-slate-50 rounded-full border border-slate-200 font-medium whitespace-nowrap transition-colors"
         >
           In Progress
         </button>
@@ -405,7 +423,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         </button>
         <button
           onClick={() => applyQuickFilter('status = "To Do"')}
-          className="px-2 py-0.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-full border border-slate-200 font-medium whitespace-nowrap transition-colors"
+          className="px-2 py-0.5 bg-white text-slate-700 hover:bg-slate-50 rounded-full border border-slate-200 font-medium whitespace-nowrap transition-colors"
         >
           To Do
         </button>
@@ -416,6 +434,44 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           Completed
         </button>
       </div>
+
+      {savedFilters.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 text-[11px] no-scrollbar">
+          <Bookmark className="w-3 h-3 text-indigo-300 shrink-0" />
+          {savedFilters.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => applyQuickFilter(filter.query)}
+              className={`px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border flex items-center gap-1 ${
+                searchQuery.trim().toLowerCase() === filter.query.toLowerCase()
+                  ? 'bg-indigo-600 text-white border-indigo-500'
+                  : 'bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700'
+              }`}
+              title={filter.query}
+            >
+              <span>{filter.name}</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => handleDeleteCustomFilter(filter.id, e as unknown as React.MouseEvent)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const next = savedFilters.filter((f) => f.id !== filter.id);
+                    setSavedFilters(next);
+                    saveCustomFilters(next);
+                  }
+                }}
+                className="inline-flex items-center text-slate-300 hover:text-rose-300"
+                title="Remove filter"
+              >
+                <Trash2 className="w-3 h-3" />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* JQL Helper Modal */}
       {showJqlHelp && (
