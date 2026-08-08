@@ -77,9 +77,9 @@ jobs:
           zip -r "extension-${new_version}.zip" * -x ".github/*"  # Exclude .github folder
 
       - name: Upload extension artifact with version
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: "chrome-extension-${{ env.new_version }}"
+          name: "jira-search-chrome-extension-${{ env.new_version }}"
           path: "extension-${{ env.new_version }}.zip"
 
       # Optional: Publish the extension to the Chrome Web Store
@@ -111,7 +111,7 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: chrome-extension-${{ env.new_version }}
+          name: jira-search-chrome-extension-${{ env.new_version }}
           path: build-artifact
 
       - name: Create GitHub Release
@@ -125,7 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload & Publish to Chrome Web Store
-        uses: chrome-stats/chrome-extension-upload@v2
+        uses: chrome-stats/jira-search-chrome-extension-upload@v2
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
