@@ -68,8 +68,8 @@ jobs:
 
       - name: Create and push release tag
         run: |
-          git tag v${{ steps.update_version.outputs.new_version }}
-          git push origin v${{ steps.update_version.outputs.new_version }}
+          git tag v${{ env.new_version }}
+          git push origin v${{ env.new_version }}
 
   publish-to-chrome-web-store:
     name: Publish to Chrome Web Store & GitHub Release
