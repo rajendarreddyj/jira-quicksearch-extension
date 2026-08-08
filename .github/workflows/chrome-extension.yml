@@ -90,7 +90,7 @@ jobs:
       #     api_key: ${{ secrets.CHROME_API_KEY }}
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.new_version }}
           name: "Release v${{ env.new_version }}"
@@ -115,7 +115,7 @@ jobs:
           path: build-artifact
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: build-artifact/extension-${{ env.new_version }}.zip
           draft: false
