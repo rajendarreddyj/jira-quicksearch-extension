@@ -94,19 +94,19 @@ Note:
 
 Use your verified GitHub Pages site once registered in Google Search Console.
 
-- Target domain: `https://rajendarreddyj.github.io/jira-quick-search-extension/`
+- Target domain: `https://rajendarreddyj.github.io/jira-quicksearch-extension/`
 
 ### Homepage URL
 
-`https://rajendarreddyj.github.io/jira-quick-search-extension/`
+`https://rajendarreddyj.github.io/jira-quicksearch-extension/`
 
 ### Support URL
 
-`https://rajendarreddyj.github.io/jira-quick-search-extension/support.md`
+`https://rajendarreddyj.github.io/jira-quicksearch-extension/support.html`
 
 ### Description URL (recommended)
 
-`https://rajendarreddyj.github.io/jira-quick-search-extension/`
+`https://rajendarreddyj.github.io/jira-quicksearch-extension/`
 
 ### Mature content
 
@@ -166,7 +166,7 @@ I certify that the following disclosures are true:
 
 Privacy policy URL:
 
-`https://rajendarreddyj.github.io/jira-quick-search-extension/privacy.md`
+`https://rajendarreddyj.github.io/jira-quicksearch-extension/privacy.html`
 
 ### Trader declaration (EEA)
 
@@ -205,7 +205,7 @@ Recommended rollout:
 ### Support channel
 
 - GitHub Issues: `https://github.com/rajendarreddyj/jira-quicksearch-extension/issues`
-- Support page: `https://rajendarreddyj.github.io/jira-quick-search-extension/support.md`
+- Support page: `https://rajendarreddyj.github.io/jira-quicksearch-extension/support.html`
 
 ## Final Submission Checklist
 
