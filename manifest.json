@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jira Quick Search",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Search Jira tickets, keep search query history, and cache ticket details offline.",
   "icons": {
     "16": "public/icons/icon16.png",
