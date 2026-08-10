@@ -102,7 +102,7 @@ Use your verified GitHub Pages site once registered in Google Search Console.
 
 ### Support URL
 
-`https://rajendarreddyj.github.io/jira-quick-search-extension/support.html`
+`https://rajendarreddyj.github.io/jira-quick-search-extension/support.md`
 
 ### Description URL (recommended)
 
@@ -111,6 +111,87 @@ Use your verified GitHub Pages site once registered in Google Search Console.
 ### Mature content
 
 No
+
+## Chrome Web Store Compliance Fields
+
+### Single purpose
+
+Jira Quick Search has one clear purpose: help users quickly find and triage Jira issues from a compact browser extension without opening the full Jira interface each time. It supports issue lookup by key, text, labels, assignee, and JQL, and improves productivity with query history, pin/watch states, and optional local caching for faster re-access and offline fallback. The extension does not provide unrelated features such as ad blocking, social sharing, analytics tracking, or content manipulation on arbitrary websites.
+
+### Permission justification
+
+#### storage justification
+
+The `storage` permission is required to save user-configured Jira settings, secure credential references, query history, pinned/watched tickets, recently viewed items, and cached issue metadata used for offline fallback. Without `storage`, the extension cannot persist core user preferences or productivity context between popup sessions.
+
+#### alarms justification
+
+The `alarms` permission is used to schedule periodic maintenance tasks such as cache refresh and stale-cache cleanup according to user settings. This keeps cached issue data current and prevents unbounded local storage growth without requiring the user to manually trigger background cleanup.
+
+#### Host permission justification
+
+Host permission `https://*.atlassian.net/*` is required so the extension can call Jira Cloud REST APIs for the user's Atlassian tenant(s) to execute searches and retrieve issue details. Access is scoped to Atlassian Jira domains only, and is used solely to fulfill the extension's single purpose (issue lookup and triage support).
+
+### Remote code
+
+Are you using remote code?
+
+- No, I am not using Remote code.
+
+Justification:
+
+All executable JavaScript is packaged with the extension bundle. The extension does not load or execute remote JS/Wasm, does not inject external script tags/modules, and does not use `eval()` to run downloaded code.
+
+### Data usage
+
+What user data do you plan to collect from users now or in the future?
+
+- Personally identifiable information: **Yes** (user-provided Jira account email used for authentication and API calls).
+- Authentication information: **Yes** (Jira API token/credential provided by user for Jira access).
+- Health information: **No**.
+- Financial and payment information: **No**.
+- Personal communications: **No**.
+- Location: **No**.
+- Web history: **No**.
+- User activity: **No**.
+- Website content: **No**.
+
+I certify that the following disclosures are true:
+
+- I do not sell or transfer user data to third parties, outside approved use cases: **Yes**.
+- I do not use or transfer user data for purposes unrelated to the item's single purpose: **Yes**.
+- I do not use or transfer user data to determine creditworthiness or for lending purposes: **Yes**.
+
+### Privacy policy
+
+Privacy policy URL:
+
+`https://rajendarreddyj.github.io/jira-quick-search-extension/privacy.md`
+
+### Trader declaration (EEA)
+
+Declare whether your publisher account is a trader or non-trader under EEA consumer protection laws.
+
+Use one of the following in the Chrome Web Store form:
+
+- **Non-trader**: Select this if you publish as an individual acting outside your trade, business, craft, or profession.
+- **Trader**: Select this if you publish as a business, company, sole proprietorship, or if the extension is offered in a professional/commercial context.
+
+If you select **Trader**, prepare these details exactly as registered:
+
+- Legal entity or full legal name
+- Registered business address
+- Contact email for consumer communication
+- Phone number (if requested by the form)
+
+Publisher decision for this release:
+
+- [ ] Trader
+- [ ] Non-trader
+
+Note:
+
+- This is a legal/compliance declaration and should match your official publisher status.
 
 ## Item Support
 
@@ -124,7 +205,7 @@ Recommended rollout:
 ### Support channel
 
 - GitHub Issues: `https://github.com/rajendarreddyj/jira-quicksearch-extension/issues`
-- Support page: `https://rajendarreddyj.github.io/jira-quick-search-extension/support.html`
+- Support page: `https://rajendarreddyj.github.io/jira-quick-search-extension/support.md`
 
 ## Final Submission Checklist
 
