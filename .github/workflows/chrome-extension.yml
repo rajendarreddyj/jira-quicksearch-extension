@@ -121,11 +121,48 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload & Publish to Chrome Web Store
-        uses: chrome-stats/chrome-extension-upload@v2
-        with:
-          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
-          client-id: ${{ secrets.CHROME_CLIENT_ID }}
-          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
-          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          file-path: jira-quicksearch-${{ env.RELEASE_TAG }}.zip
-          publish: true
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          EXT_ZIP: jira-quicksearch-${{ env.RELEASE_TAG }}.zip
+        run: |
+          set -euo pipefail
+
+          echo "Requesting Google OAuth access token..."
+          TOKEN_RESPONSE=$(curl -sS -X POST "https://oauth2.googleapis.com/token" \
+            -d "client_id=${CHROME_CLIENT_ID}" \
+            -d "client_secret=${CHROME_CLIENT_SECRET}" \
+            -d "refresh_token=${CHROME_REFRESH_TOKEN}" \
+            -d "grant_type=refresh_token")
+
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "Failed to get access token"
+            echo "$TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          echo "Uploading extension package to Chrome Web Store..."
+          UPLOAD_RESPONSE=$(curl -sS -X PUT \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@${EXT_ZIP}" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${CHROME_EXTENSION_ID}")
+
+          echo "Upload response: $UPLOAD_RESPONSE"
+          UPLOAD_OK=$(echo "$UPLOAD_RESPONSE" | jq -r '.uploadState == "SUCCESS"')
+          if [ "$UPLOAD_OK" != "true" ]; then
+            echo "Chrome Web Store upload failed"
+            exit 1
+          fi
+
+          echo "Publishing extension..."
+          PUBLISH_RESPONSE=$(curl -sS -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "x-goog-api-version: 2" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${CHROME_EXTENSION_ID}/publish")
+
+          echo "Publish response: $PUBLISH_RESPONSE"
