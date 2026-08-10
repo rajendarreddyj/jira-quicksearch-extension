@@ -1,0 +1,37 @@
+name: Question
+description: Ask a question about setup or usage
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? We are happy to help.
+
+        Please include enough context so we can assist quickly.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+      placeholder: How do I...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What did you try already?
+      placeholder: I tried... but...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked README and docs pages
+          required: true
+        - label: I searched existing issues for similar questions
+          required: true
