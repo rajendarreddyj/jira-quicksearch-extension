@@ -4,29 +4,29 @@
 
 **Jira Quick Search** is a fast, offline-capable Chrome Extension and Web Dashboard designed for engineering teams and managers to instantly search, inspect, cache, watch, and transition Jira issues without waiting for Jira's slow web interface to load.
 
-![Jira Quick Search - Offline Cache View](./src/assets/images/extension_offline_cache.png)
+![Jira Quick Search - Offline Cache View](./src/assets/images/jira-quicksearch-extension-offlinecache.png)
 
 ## 🖼️ Latest UI Screenshots
 
 ### Search Experience
 
-![Search Experience](./src/assets/images/extension_search.png)
+![Search Experience](./src/assets/images/jira-quicksearch-extension-search.png)
 
 ### Activity Dashboard
 
-![Activity Dashboard](./src/assets/images/extension_activity.png)
+![Activity Dashboard](./src/assets/images/jira-quicksearch-extension-activity.png)
 
 ### Offline Cache Manager
 
-![Offline Cache Manager](./src/assets/images/extension_offline_cache.png)
+![Offline Cache Manager](./src/assets/images/jira-quicksearch-extension-offlinecache.png)
 
 ### Search History
 
-![Search History](./src/assets/images/estension_history.png)
+![Search History](./src/assets/images/jira-quicksearch-extension-history.png)
 
 ### Settings & Security
 
-![Settings & Security](./src/assets/images/extension_settings.png)
+![Settings & Security](./src/assets/images/jira-quicksearch-extension-settings.png)
 
 ---
 

@@ -45,16 +45,17 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
 
   const formattedDiagnosticsJson = JSON.stringify(debugDiagnostics, null, 2);
 
-  const mailtoSubject = encodeURIComponent(`[Jira Extension Issue Report] ${issueSummary || 'Bug or Sync Error'}`);
-  const mailtoBody = encodeURIComponent(
-    `Developer Support Request\n\n` +
-    `Summary: ${issueSummary || 'Issue Report'}\n\n` +
-    `User Notes:\n${issueDescription || 'No additional details provided.'}\n\n` +
-    `--- System & Extension Debug State ---\n` +
-    `${formattedDiagnosticsJson}`
+  const issueTitle = encodeURIComponent(issueSummary || 'Bug or Sync Error');
+  const issueBody = encodeURIComponent(
+    `## Summary\n${issueSummary || 'Issue Report'}\n\n` +
+    `## Steps to Reproduce / Additional Details\n${issueDescription || 'No additional details provided.'}\n\n` +
+    `## Auto-Generated Debug Diagnostics\n\n` +
+    '```json\n' +
+    `${formattedDiagnosticsJson}\n` +
+    '```\n'
   );
 
-  const mailtoUrl = `mailto:support@jira-quick-search-ext.internal?subject=${mailtoSubject}&body=${mailtoBody}`;
+  const githubIssueUrl = `https://github.com/rajendarreddyj/jira-quicksearch-extension/issues/new?template=bug_report.yml&title=${issueTitle}&body=${issueBody}`;
 
   const handleCopyDiagnostics = () => {
     navigator.clipboard.writeText(formattedDiagnosticsJson);
@@ -73,15 +74,16 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
             </div>
             <div>
               <h3 className="text-xs font-bold flex items-center gap-2">
-                <span>Report Issue to Developer</span>
+                <span>Report Issue on GitHub</span>
                 <span className="text-[9px] font-mono bg-rose-900 text-rose-200 px-1.5 py-0.5 rounded border border-rose-700">
                   Pre-filled Support Template
                 </span>
               </h3>
-              <p className="text-[10px] text-slate-400">Include settings and local diagnostic state for fast debugging</p>
+              <p className="text-[10px] text-slate-400">Create a GitHub issue with local diagnostic state for fast debugging</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
           >
@@ -93,10 +95,11 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
         <div className="p-4 overflow-y-auto space-y-4 text-xs">
           {/* Issue Summary Input */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            <label htmlFor="report-issue-summary" className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
               Issue Summary / Error Title
             </label>
             <input
+              id="report-issue-summary"
               type="text"
               value={issueSummary}
               onChange={(e) => setIssueSummary(e.target.value)}
@@ -107,10 +110,11 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
 
           {/* Details Textarea */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            <label htmlFor="report-issue-details" className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
               Additional Details / Steps to Reproduce
             </label>
             <textarea
+              id="report-issue-details"
               rows={3}
               value={issueDescription}
               onChange={(e) => setIssueDescription(e.target.value)}
@@ -154,13 +158,13 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
               Cancel
             </button>
             <a
-              href={mailtoUrl}
+              href={githubIssueUrl}
               target="_blank"
               rel="noreferrer"
               className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Send Pre-filled Email</span>
+              <span>Create GitHub Issue</span>
             </a>
           </div>
         </div>

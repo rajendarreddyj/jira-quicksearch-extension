@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support
+    url: https://github.com/rajendarreddyj/jira-quicksearch-extension/blob/main/SUPPORT.md
+    about: Read support guidance before opening an issue.
+  - name: Security Vulnerability Report
+    url: https://github.com/rajendarreddyj/jira-quicksearch-extension/blob/main/SECURITY.md
+    about: Report security issues privately using the process in SECURITY.md.
